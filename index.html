@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Rozkrój</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@600;700&display=swap">
+<style>
+/* Rozkrój — wygląd jak Półkownik: szałwiowe karty z cieniem, tonalne pola z dużymi liczbami (Barlow Condensed),
+   pigułkowe przełączniki, zielony pasek podsumowania na dole, projekty w wysuwanym arkuszu; styl „rysunek techniczny” i tryb ciemny. */
+:root{
+  --bg:#C9D3C0; --surface:#FBFCF9; --surface-2:#DDE6D4; --ink:#1A2117; --muted:#525E4C; --line:#BCC8B2;
+  --accent:#465C3E; --accent-ink:#FFF8EA; --accent-soft:#C3D3B7; --accent-text:#34472D;
+  --bar1:#5F7556; --bar2:#41543A; --brass:#D6B06C; --brass-ink:#2A2412;
+  --hole:#7E5A17; --hole-soft:#E6CD98; --board:#EFE6D3; --board-edge:#A88E5E;
+  --warn-bg:#FBEBCF; --warn:#6E4708;
+  --shadow:0 1px 2px rgba(30,37,27,.08),0 6px 20px rgba(30,37,27,.10);
+  --f-disp:"Barlow Condensed","Roboto Condensed","Arial Narrow",sans-serif;
+  --f-body:"Plus Jakarta Sans",system-ui,sans-serif;
+  /* rysunek płyty (nazwy jak w design systemie Rozkrój, czyta je też JS) */
+  --font-body:"Plus Jakarta Sans",system-ui,sans-serif;
+  --waste:#EFE6D3; --hatch:#D8C9A6; --plan-ink:#1A2117; --band:#b4361a; --grain:rgba(26,33,23,.32); --remnant:#465C3E; --teal-700:#465C3E;
+  --part-1:#f2d49b; --part-2:#b9d9c4; --part-3:#f0b8a0; --part-4:#bcd0ee; --part-5:#e6c6e8; --part-6:#d9e3a1; --part-7:#f4e08c; --part-8:#a8dcdc; --part-9:#e2c1a5; --part-10:#c9c9ee;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#080B07; --surface:#141A12; --surface-2:#273022; --ink:#E9EEE5; --muted:#A3AE9C; --line:#3A4634;
+  --accent:#93AD83; --accent-ink:#10150E; --accent-soft:#34452E; --accent-text:#BDD4AE;
+  --bar1:#2E3B2A; --bar2:#1D251A; --hole:#E3BC74; --hole-soft:#4A3F26; --board:#353025; --board-edge:#8E7A55;
+  --warn-bg:#3A2C12; --warn:#F2C26B; --waste:#2A261D; --hatch:#4A4232; --remnant:#93AD83;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.25); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#080B07; --surface:#141A12; --surface-2:#273022; --ink:#E9EEE5; --muted:#A3AE9C; --line:#3A4634;
+  --accent:#93AD83; --accent-ink:#10150E; --accent-soft:#34452E; --accent-text:#BDD4AE;
+  --bar1:#2E3B2A; --bar2:#1D251A; --hole:#E3BC74; --hole-soft:#4A3F26; --board:#353025; --board-edge:#8E7A55;
+  --warn-bg:#3A2C12; --warn:#F2C26B; --waste:#2A261D; --hatch:#4A4232; --remnant:#93AD83;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.25); color-scheme:dark}
+/* styl „Rysunek techniczny” */
+:root[data-style="tech"]{
+  --bg:#E6EAEE; --surface:#FFFFFF; --surface-2:#F6F8FA; --ink:#111827; --muted:#59636E; --line:#C9D1DA;
+  --accent:#1F2A37; --accent-ink:#FFFFFF; --accent-soft:#E3E8EE; --accent-text:#1F2A37;
+  --bar1:#1F2A37; --bar2:#111827; --brass:#E4572E; --brass-ink:#FFFFFF;
+  --hole:#E4572E; --hole-soft:#F8D3C6; --board:#FFFFFF; --board-edge:#1F2A37; --waste:#F6F8FA; --hatch:#C9D1DA; --remnant:#E4572E;
+  --warn-bg:#FDE7DF; --warn:#9A2F12; --tech-frame:#111827; --tech-dash:#9AA6B2; --tech-drop:rgba(17,24,39,.12);
+  --shadow:none; --f-disp:"JetBrains Mono","DejaVu Sans Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root[data-style="tech"]:not([data-theme="light"]){
+  --bg:#0E1319; --surface:#161D25; --surface-2:#1C252F; --ink:#E8EDF2; --muted:#9AA6B2; --line:#2E3A47;
+  --accent:#E8EDF2; --accent-ink:#0E1319; --accent-soft:#25303C; --accent-text:#E8EDF2;
+  --bar1:#1F2833; --bar2:#0A0F14; --brass:#FF7A50; --hole:#FF7A50; --hole-soft:#4A2A20; --board:#161D25; --board-edge:#9AA6B2;
+  --waste:#1C252F; --hatch:#2E3A47; --remnant:#FF7A50; --warn-bg:#3A2018; --warn:#FFB59A; --tech-frame:#3A4756; --tech-dash:#4A5868; --tech-drop:rgba(0,0,0,.45); color-scheme:dark}}
+:root[data-style="tech"][data-theme="dark"]{
+  --bg:#0E1319; --surface:#161D25; --surface-2:#1C252F; --ink:#E8EDF2; --muted:#9AA6B2; --line:#2E3A47;
+  --accent:#E8EDF2; --accent-ink:#0E1319; --accent-soft:#25303C; --accent-text:#E8EDF2;
+  --bar1:#1F2833; --bar2:#0A0F14; --brass:#FF7A50; --hole:#FF7A50; --hole-soft:#4A2A20; --board:#161D25; --board-edge:#9AA6B2;
+  --waste:#1C252F; --hatch:#2E3A47; --remnant:#FF7A50; --warn-bg:#3A2018; --warn:#FFB59A; --tech-frame:#3A4756; --tech-dash:#4A5868; --tech-drop:rgba(0,0,0,.45); color-scheme:dark}
+
+[hidden]{display:none!important}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{font-size:18px;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:1rem;line-height:1.45;padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
+
+/* pasek aplikacji */
+.appbar{position:sticky;top:0;z-index:20;background:var(--bg)}
+.appbar-in{max-width:800px;margin:0 auto;display:flex;align-items:center;gap:8px;padding:14px max(16px,env(safe-area-inset-right,0px)) 8px max(16px,env(safe-area-inset-left,0px))}
+.appname{flex:1;min-width:0;margin:0;font:700 clamp(1.3rem,7.2vw,1.75rem)/1.1 var(--f-disp);letter-spacing:.05em;color:var(--accent-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.iconbtn{flex:none;width:42px;height:42px;border-radius:50%;border:0;background:var(--surface);color:var(--accent-text);box-shadow:var(--shadow);display:grid;place-items:center;cursor:pointer;padding:0}
+.iconbtn:active{background:var(--surface-2)}
+.iconbtn .i-sun{display:none} html.is-dark .iconbtn .i-sun{display:block} html.is-dark .iconbtn .i-moon{display:none}
+
+/* treść */
+.app{max-width:800px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr);gap:14px;padding:16px max(16px,env(safe-area-inset-right,0px)) 20px max(16px,env(safe-area-inset-left,0px))}
+.card,.panel{background:var(--surface);border-radius:22px;box-shadow:var(--shadow);padding:6px 16px 14px;min-width:0;display:grid;gap:12px}
+.sec-h{display:flex;align-items:center;gap:12px;min-height:56px;flex-wrap:wrap}
+.sec-ic{flex:none;width:36px;height:36px;border-radius:11px;background:var(--accent-soft);color:var(--accent-text);display:grid;place-items:center}
+.sec-t{flex:1;font-weight:700;font-size:1.02rem;margin:0}
+.sec-h .status{font-size:.8rem;color:var(--muted);font-weight:600}
+.note{margin:0;font-size:.82rem;color:var(--muted)}
+.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:420px){.grid2{grid-template-columns:1fr}}
+
+/* przyciski */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 18px;border:0;border-radius:999px;background:var(--accent);color:var(--accent-ink);font:700 .92rem var(--f-body);cursor:pointer;box-shadow:var(--shadow);text-decoration:none}
+.btn.ghost{background:var(--surface-2);color:var(--accent-text);box-shadow:none}
+.btn.quiet{background:transparent;color:var(--accent-text);box-shadow:none}
+.btn.danger{background:var(--warn-bg);color:var(--warn);box-shadow:none}
+.btn:disabled{opacity:.4;cursor:default;box-shadow:none}
+.btn:active:not(:disabled){filter:brightness(.95)}
+.icon{flex:none;width:36px;height:36px;border-radius:50%;border:0;background:var(--surface);color:var(--accent-text);display:grid;place-items:center;cursor:pointer;padding:0;font-size:1rem;line-height:1}
+.icon:disabled{opacity:.35;cursor:default}
+
+/* pola */
+.f{display:grid;gap:4px;background:var(--surface-2);border-radius:16px;padding:10px 14px 8px;border:2px solid transparent;font-size:.74rem;font-weight:600;color:var(--muted);min-width:0;cursor:text}
+.f:focus-within{border-color:var(--accent)}
+.f input,.f textarea,.f select{all:unset;display:block;width:100%;min-width:0;font:700 1.45rem var(--f-disp);letter-spacing:.02em;color:var(--ink);font-variant-numeric:tabular-nums}
+.f input#pname,.f textarea{font:600 1rem var(--f-body);letter-spacing:0}
+.f textarea{white-space:pre;min-height:4.5em}
+.f input::placeholder,.f textarea::placeholder,.input::placeholder{color:var(--muted);opacity:.55}
+.input{min-width:0;height:36px;padding:0 8px;border:2px solid transparent;border-radius:10px;background:var(--surface-2);color:var(--ink);font:700 1.05rem var(--f-disp);letter-spacing:.02em;font-variant-numeric:tabular-nums;outline:none}
+.input:focus{border-color:var(--accent)}
+.input.sm{height:34px}
+
+/* przełącznik (checkbox w stylu Półkownika) */
+.check{display:flex;align-items:center;gap:12px;min-height:44px;cursor:pointer;font-weight:600;font-size:.92rem}
+.check input[type=checkbox]{appearance:none;-webkit-appearance:none;flex:none;margin:0;width:52px;height:32px;border-radius:999px;background:var(--line);position:relative;cursor:pointer;transition:background .2s}
+.check input[type=checkbox]::before{content:"";position:absolute;top:4px;left:4px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .2s}
+.check input[type=checkbox]:checked{background:var(--accent)}
+.check input[type=checkbox]:checked::before{transform:translateX(20px)}
+.subedge{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+.subedge .input{width:64px;text-align:center}
+.subedge .unit{color:var(--accent-text);font-weight:700}
+.subedge .note{flex-basis:100%}
+
+/* podsekcje (details) */
+details.sub,.disclosure{background:var(--surface-2);border-radius:16px;padding:0 14px}
+details.sub>summary,.disclosure>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;min-height:52px;font-weight:700;font-size:.92rem;color:var(--ink)}
+details.sub>summary::-webkit-details-marker,.disclosure>summary::-webkit-details-marker{display:none}
+details.sub>summary::after,.disclosure>summary::after{content:"";margin-left:auto;flex:none;width:8px;height:8px;border-right:2.4px solid var(--accent-text);border-bottom:2.4px solid var(--accent-text);transform:rotate(45deg) translateY(-3px);transition:transform .3s}
+details.sub[open]>summary::after,.disclosure[open]>summary::after{transform:rotate(-135deg) translate(-2px,-1px)}
+.sub-body{display:grid;gap:10px;padding-bottom:12px}
+.sub-body .f,.disclosure .f{background:var(--surface)}
+.sub-val{font-weight:600;font-size:.8rem;color:var(--muted);font-variant-numeric:tabular-nums}
+
+/* komunikaty */
+.notice{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px;background:var(--accent-soft);color:var(--accent-text);border-radius:14px;padding:10px 14px;font-size:.88rem;font-weight:500}
+.notice.warn,.warn{background:var(--warn-bg);color:var(--warn)}
+
+/* płyty */
+.stocks .colhead,.stocks .row{display:grid;gap:8px;align-items:center;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr) minmax(0,.9fr) 36px}
+.colhead{font-size:.68rem;font-weight:700;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;padding:0 4px}
+.list{display:grid;gap:8px}
+.stocks .row [data-k="c"]{font:600 .92rem var(--f-body)}
+@media (max-width:520px){.stocks .colhead,.stocks .row{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,.9fr) 36px}.stocks .row [data-k="c"],.stocks .colhead span:first-child{grid-column:1/-1}}
+
+/* formatki: kompaktowe wiersze (PartRow) w stylu Półkownika */
+.plist{container-type:inline-size;display:flex;flex-direction:column}
+.prt,.prt-head{display:grid;align-items:center;gap:4px 6px;grid-template-columns:6px minmax(0,1fr) 44px minmax(0,1fr) 44px 40px 34px;grid-template-areas:"sw nm nm pl pl g del" "sw l el w ew q q"}
+.prt{padding:8px 0;border-top:1px solid var(--line)}
+.prt-head{padding:0 0 4px;font-size:.62rem;font-weight:700;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+.prt-head>*{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prt-head .c-el,.prt-head .c-ew,.prt-head .c-g,.prt-head .c-pl{text-align:center;text-transform:none;letter-spacing:0}
+.prt .sw{grid-area:sw;align-self:stretch;width:6px;border-radius:3px}
+.c-nm{grid-area:nm}.c-l{grid-area:l}.c-el{grid-area:el}.c-w{grid-area:w}.c-ew{grid-area:ew}.c-q{grid-area:q}.c-pl{grid-area:pl}.c-g{grid-area:g}.c-del{grid-area:del}
+.prt .c-nm{font:500 16px var(--font-body);letter-spacing:0;text-overflow:ellipsis}
+.prt select.c-pl{font:600 .78rem var(--f-body);padding:0 4px;cursor:pointer}
+.prt select.c-pl.none{color:var(--muted)}
+.prt .icon{width:34px;height:34px;background:var(--surface-2)}
+.grain{color:var(--accent-text)}.grain.inherited{color:var(--muted);box-shadow:inset 0 0 0 1.5px var(--line)}
+.grain svg{display:block}
+.eb{display:flex;justify-content:center;align-items:center;gap:0}
+.eb label{display:inline-flex;align-items:center;justify-content:center;width:22px;height:26px;cursor:pointer}
+.eb input[type=checkbox]{width:18px;height:18px;margin:0;accent-color:var(--band)}
+.input.ed1{border-bottom:3px solid var(--band)}
+.input.ed2{border-top:3px solid var(--band);border-bottom:3px solid var(--band)}
+.prt-group{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 8px;padding:12px 0 4px;font-weight:700;font-size:.85rem;color:var(--accent-text)}
+.prt-group span{font-weight:600;font-size:.74rem;color:var(--muted)}
+.prt-group+.prt{border-top:0}
+@container (min-width:580px){
+  .prt,.prt-head{gap:0;grid-template-columns:6px 8px minmax(96px,var(--nm-w,132px)) minmax(8px,1fr) 56px 4px 44px minmax(8px,1fr) 56px 4px 44px minmax(8px,1fr) 40px minmax(8px,1fr) 128px 4px 34px 4px 34px;grid-template-areas:"sw . nm . l . el . w . ew . q . pl . g . del"}
+  .prt{padding:5px 0}
+}
+
+/* wynik */
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
+.tile{background:var(--surface-2);border-radius:18px;padding:10px 14px;min-width:0}
+.tile b{display:block;font:700 1.7rem/1.05 var(--f-disp);color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+.tile span{display:block;font-size:.74rem;font-weight:600;color:var(--muted)}
+.tile.main{grid-column:1/-1;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.tile.main b{font-size:2.6rem;color:var(--hole)}
+.sheet{gap:10px}
+.sheet-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:2px 12px;padding-top:10px}
+.sheet-head h3{margin:0;font:700 1.35rem var(--f-disp);letter-spacing:.02em;color:var(--accent-text)}
+.sheet-head span{font-size:.78rem;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}
+.bar{height:8px;border-radius:999px;background:var(--surface-2);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:999px}
+svg.plan{display:block;width:100%;height:auto;border-radius:12px;background:var(--waste);border:1.5px solid var(--board-edge)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;list-style:none;margin:0;padding:0;font-size:.8rem;font-weight:600}
+.chips li{display:inline-flex;align-items:center;gap:6px;background:var(--surface-2);border-radius:999px;padding:4px 10px;font-variant-numeric:tabular-nums}
+.chips i{display:inline-block;width:10px;height:10px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
+.chips i.band{width:16px;height:3px;border-radius:2px;background:var(--band);box-shadow:none}
+.chips i.remnant{width:14px;height:10px;border-radius:2px;background:none;box-shadow:none;outline:1.5px dashed var(--remnant);outline-offset:-1.5px}
+.chips i.grain{width:16px;height:10px;border-radius:2px;background:repeating-linear-gradient(180deg,var(--grain) 0 1px,transparent 1px 3px),var(--part-1)}
+
+/* projekty (w arkuszu) */
+.prow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;align-items:center;background:var(--surface);box-shadow:var(--shadow);border:2px solid transparent;border-radius:16px;padding:12px 14px}
+.prow.cur{border-color:var(--accent)}
+.prow b{font-weight:700}
+.prow small{display:block;font-size:.8rem;color:var(--muted);font-variant-numeric:tabular-nums}
+
+/* dolny pasek podsumowania */
+.sumbar{position:fixed;z-index:15;left:0;right:0;bottom:0;pointer-events:none;padding:0 max(12px,env(safe-area-inset-right,0px)) max(8px,env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}
+.stats{pointer-events:auto;max-width:800px;margin:0 auto;display:flex;align-items:center;gap:6px;background:linear-gradient(140deg,var(--bar1),var(--bar2));color:#F3EEDD;border-radius:999px;box-shadow:0 6px 24px rgba(0,0,0,.3);padding:6px 6px 6px 16px;min-height:58px}
+.stat{display:flex;align-items:baseline;gap:6px;padding:4px 10px;min-width:0}
+.stat+.stat{border-left:1px solid rgba(243,238,221,.18)}
+.stat dt{font-size:.66rem;font-weight:600;opacity:.8}
+.stat dd{margin:0;font:700 1.25rem/1 var(--f-disp);color:var(--brass);font-variant-numeric:tabular-nums;white-space:nowrap}
+.stats .busy{font-size:.7rem;opacity:.75;margin-left:auto}
+.stats .gobtn{margin-left:auto;flex:none;white-space:nowrap;min-height:46px;border-radius:999px;border:0;background:#F3EEDD;color:var(--bar2);font:700 .9rem var(--f-body);padding:0 16px;cursor:pointer}
+@media (max-width:400px){.stats{padding-left:10px}.stat{padding:4px 6px}.stats .gobtn{padding:0 12px}}
+.stats dl{display:flex;margin:0;min-width:0;overflow:hidden}
+@media (max-width:480px){.stat.opt{display:none}}
+
+/* arkusz projektów */
+.scrim{position:fixed;inset:0;z-index:40;background:rgba(6,9,5,.72);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+.sheetp{position:fixed;left:0;right:0;top:0;z-index:41;max-height:88vh;overflow:auto;background:var(--bg);border-radius:0 0 26px 26px;box-shadow:0 10px 30px rgba(0,0,0,.3);padding-bottom:16px;animation:down .3s ease-out}
+.sheetp-top{position:sticky;top:0;z-index:1;background:linear-gradient(135deg,var(--bar1),var(--bar2));color:#F3EEDD;padding:14px max(16px,env(safe-area-inset-right,0px)) 14px max(16px,env(safe-area-inset-left,0px))}
+.sheetp-h{max-width:800px;margin:0 auto;display:flex;align-items:center;gap:10px}
+.sheetp-h h2{flex:1;margin:0;font:700 1.45rem/1 var(--f-disp);letter-spacing:.03em;color:var(--brass)}
+.sheetp-ic{flex:none;width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.08);color:var(--brass);display:grid;place-items:center}
+.sheetp-x{border:0;background:rgba(255,255,255,.1);color:var(--brass);font-weight:700;font-size:.85rem;border-radius:999px;padding:10px 14px;cursor:pointer}
+.sheetp-in{max-width:800px;margin:0 auto;display:grid;gap:10px;padding:14px max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px))}
+.handle{width:44px;height:5px;border-radius:3px;background:var(--line);margin:8px auto 0}
+@keyframes down{from{transform:translateY(-100%)}to{transform:none}}
+
+.foot{max-width:800px;margin:0 auto;display:grid;justify-items:center;gap:10px;text-align:center;color:var(--muted);font-size:.85rem;font-weight:600;letter-spacing:.04em;padding:4px 16px 28px}
+.foot-line{width:48px;height:3px;border-radius:2px;background:var(--brass);opacity:.7}
+.foot-ver{margin-top:-6px;font-size:.74rem;opacity:.75}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* rysunek techniczny: kanciasto, ramki zamiast cieni */
+html[data-style="tech"] .appname{letter-spacing:.1em;font-size:clamp(1.05rem,5.4vw,1.3rem);color:var(--ink)}
+html[data-style="tech"] .card,html[data-style="tech"] .panel,html[data-style="tech"] .iconbtn{border-radius:4px;border:1.5px solid var(--tech-frame);box-shadow:4px 4px 0 var(--tech-drop)}
+html[data-style="tech"] .f,html[data-style="tech"] .input,html[data-style="tech"] details.sub,html[data-style="tech"] .disclosure{border-radius:2px;border:1px dashed var(--tech-dash);background:var(--surface)}
+html[data-style="tech"] .f:focus-within,html[data-style="tech"] .input:focus{border:1px solid var(--accent)}
+html[data-style="tech"] .btn,html[data-style="tech"] .icon,html[data-style="tech"] .sec-ic,html[data-style="tech"] .tile,html[data-style="tech"] .chips li,html[data-style="tech"] .notice,html[data-style="tech"] .prow,html[data-style="tech"] svg.plan{border-radius:3px;box-shadow:none}
+html[data-style="tech"] .check input[type=checkbox],html[data-style="tech"] .check input[type=checkbox]::before{border-radius:3px}
+html[data-style="tech"] .stats{border-radius:6px}
+html[data-style="tech"] .colhead,html[data-style="tech"] .prt-head,html[data-style="tech"] .f{text-transform:uppercase;letter-spacing:.06em}
+</style>
+</head>
+<body>
+<header class="appbar">
+  <div class="appbar-in">
+    <h1 class="appname">ROZKRÓJ</h1>
+    <button type="button" class="iconbtn" id="shareBtn" aria-label="Pobierz PDF"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M12 11v6M9 14l3 3 3-3"/></svg></button>
+    <button type="button" class="iconbtn" id="styleBtn" aria-label="Zmień styl: klasyczny / rysunek techniczny" aria-pressed="false"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.8-.9 1.8-1.9 0-.5-.2-.9-.5-1.3-.3-.4-.5-.8-.5-1.3 0-1 .8-1.8 1.8-1.8H16a5 5 0 0 0 5-5c0-3.9-4-6.7-9-6.7z"/><circle cx="7.5" cy="11" r="1.2" fill="currentColor" stroke="none"/><circle cx="10.5" cy="7.2" r="1.2" fill="currentColor" stroke="none"/><circle cx="15" cy="7.4" r="1.2" fill="currentColor" stroke="none"/></svg></button>
+    <button type="button" class="iconbtn" id="themeBtn" aria-label="Przełącz tryb ciemny"><svg class="i-moon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg><svg class="i-sun" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg></button>
+    <button type="button" class="iconbtn" id="projBtn" aria-label="Projekty" aria-expanded="false" aria-controls="projSheet"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></button>
+  </div>
+</header>
+
+<main class="app">
+  <section class="card stocks" aria-labelledby="h-stock">
+    <div class="sec-h">
+      <span class="sec-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="1.5"/><path d="M3 9h18"/></svg></span>
+      <h2 class="sec-t" id="h-stock">Płyty</h2>
+      <button class="btn ghost" id="add-stock" type="button">+ Płyta lub odpad</button>
+    </div>
+    <div class="colhead"><span>Kod płyty</span><span>Dł. (mm)</span><span>Szer. (mm)</span><span>Sztuk</span><span></span></div>
+    <div class="list" id="stocks"></div>
+    <p class="note">Kod płyty to oznaczenie dekoru producenta, np. Swiss Krono U3824 VL. Nowa płyta dostaje format płyty meblowej 18 mm: 2800×2070 mm (dla odpadu wpisz jego wymiary). Puste „Sztuk” = dowolna liczba.</p>
+    <details class="sub">
+      <summary>Ustawienia cięcia <span class="sub-val" id="cutSum"></span></summary>
+      <div class="sub-body">
+        <div class="grid2">
+          <label class="f" for="kerf">Rzaz piły (mm)<input type="text" inputmode="decimal" id="kerf"></label>
+          <label class="f" for="trim">Obrównanie krawędzi (mm)<input type="text" inputmode="decimal" id="trim"></label>
+          <label class="f" for="allow">Naddatek okleiny na krawędź (mm)<input type="text" inputmode="decimal" id="allow"></label>
+        </div>
+      </div>
+    </details>
+    <label class="check" for="grain"><input type="checkbox" id="grain" role="switch"><span>Zachowaj kierunek słojów we wszystkich formatkach</span></label>
+  </section>
+
+  <section class="card parts" aria-labelledby="h-parts" id="parts-panel">
+    <div class="sec-h">
+      <span class="sec-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="4" width="8" height="16" rx="1"/><rect x="13" y="4" width="8" height="7" rx="1"/><rect x="13" y="13" width="8" height="7" rx="1"/></svg></span>
+      <h2 class="sec-t" id="h-parts">Formatki</h2>
+      <button class="btn" id="add-part" type="button">+ Formatka</button>
+    </div>
+    <div class="subedge"><label class="check" for="subEdge"><input type="checkbox" id="subEdge" role="switch"><span>Odejmij okleinę</span></label><input class="input" type="text" inputmode="decimal" id="edgeT" aria-label="Grubość okleiny w mm"><span class="unit">mm</span><span class="note" id="dm-note" role="status"></span></div>
+    <div class="notice" id="example" hidden><span>To przykładowa szafa. Zmień ją albo zacznij od pustej listy.</span><button class="btn quiet" id="clear" type="button">Wyczyść listę</button></div>
+    <div class="plist">
+      <div class="prt-head"><span class="c-nm">Nazwa</span><span class="c-l">Dł.</span><span class="c-el">okl.</span><span class="c-w">Szer.</span><span class="c-ew">okl.</span><span class="c-q">Szt.</span><span class="c-pl">płyta</span><span class="c-g">słoje</span></div>
+      <div id="parts"></div>
+    </div>
+    <p class="note">Wymiary w mm. „okl.” za wymiarem = oklejone krawędzie o tej długości (jedno pole = jedna krawędź, dwa = obie). „słoje”: dowolnie (↻) → wzdłuż długości → wzdłuż szerokości.</p>
+    <details class="sub">
+      <summary>Import: PRO100 lub lista z Excela</summary>
+      <div class="sub-body">
+        <div class="actions"><button class="btn ghost" id="pro-btn" type="button">Importuj plik PRO100 (.txt)</button><input type="file" id="pro-file" accept=".txt,.csv,text/plain" hidden></div>
+        <p class="note">PRO100: pola oddzielone tabulatorem — nazwa, długość, okleina, szerokość, okleina, grubość, ilość, płyta (= obie krawędzie, — jedna). Taki tekst możesz też wkleić poniżej.</p>
+        <label class="f" for="paste">Jedna formatka w wierszu: długość, szerokość, sztuk, nazwa<textarea id="paste" rows="4" placeholder="720&#9;560&#9;2&#9;Bok"></textarea></label>
+        <div class="actions"><button class="btn ghost" id="import" type="button">Dodaj do listy</button><button class="btn quiet" id="copy" type="button">Kopiuj obecną listę</button><span class="note" id="io-msg" role="status"></span></div>
+      </div>
+    </details>
+  </section>
+
+  <section class="card" aria-labelledby="h-sum" id="wynik">
+    <div class="sec-h">
+      <span class="sec-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span>
+      <h2 class="sec-t" id="h-sum">Wynik</h2>
+    </div>
+    <p class="note" id="opt-state" role="status"></p>
+    <div id="warn"></div>
+    <div class="tiles" id="tiles"></div>
+    <div class="actions" id="export" hidden><button class="btn" id="pdf" type="button">Pobierz PDF</button><button class="btn ghost" id="csv" type="button">Pobierz CSV</button></div>
+    <p class="note" id="ex-msg" role="status"></p>
+  </section>
+  <div id="sheets" style="display:grid;gap:14px"></div>
+</main>
+
+<footer class="foot"><span class="foot-line" aria-hidden="true"></span><span>© <span id="year">2026</span> Pracownia Stolarska Maciej Łagun</span><span class="foot-ver">Rozkrój · wersja 1.0</span></footer>
+
+<section class="sumbar" aria-label="Podsumowanie">
+  <div class="stats">
+    <dl><div class="stat"><dt>płyty</dt><dd id="sb-n">–</dd></div><div class="stat"><dt>wykorzyst.</dt><dd id="sb-u">–</dd></div><div class="stat opt"><dt>odpad</dt><dd id="sb-w">–</dd></div></dl>
+    <span id="dock-txt" hidden></span>
+    <button class="gobtn" id="go" type="button">Pokaż rozkrój</button>
+  </div>
+</section>
+
+<div class="scrim" id="scrim" hidden></div>
+<section class="sheetp" id="projSheet" hidden role="dialog" aria-modal="true" aria-labelledby="h-proj">
+  <div class="sheetp-top"><div class="sheetp-h">
+    <span class="sheetp-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span>
+    <h2 id="h-proj">Projekty</h2><span class="status" id="proj-state" role="status" style="font-size:.8rem;opacity:.8"></span>
+    <button type="button" class="sheetp-x" id="projClose">Zamknij</button>
+  </div></div>
+  <div class="sheetp-in">
+    <label class="f" for="pname">Nazwa projektu<input type="text" id="pname" placeholder="np. Szafa do przedpokoju"></label>
+    <div class="actions">
+      <button class="btn" id="psave" type="button" disabled>Zapisz</button>
+      <button class="btn ghost" id="pcopy" type="button" disabled hidden>Zapisz jako kopię</button>
+      <button class="btn quiet" id="pnew" type="button">Nowy projekt</button>
+    </div>
+    <p class="note" id="proj-msg" role="status"></p>
+    <details class="disclosure" open>
+      <summary id="plist-sum">Zapisane projekty</summary>
+      <div class="list" id="plist" style="padding-bottom:12px"><p class="note">Wczytuję zapisane projekty…</p></div>
+    </details>
+    <p class="note" id="proj-where"></p>
+    <div class="handle" aria-hidden="true"></div>
+  </div>
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="optimizer.js"></script>
+<script>
+
+(function () {
+  /* Kolory z design systemu (tokens.css); wartości w nawiasach to zapas, gdyby arkusz się nie wczytał. */
+  var ROOT_CSS = getComputedStyle(document.documentElement);
+  function tok(name, fallback) { var v = ROOT_CSS.getPropertyValue('--' + name).trim(); return v || fallback; }
+  var COLORS = ['#f2d49b', '#b9d9c4', '#f0b8a0', '#bcd0ee', '#e6c6e8', '#d9e3a1', '#f4e08c', '#a8dcdc', '#e2c1a5', '#c9c9ee']
+    .map(function (c, i) { return tok('part-' + (i + 1), c); });
+  var PLAN_INK = tok('plan-ink', '#18201e'), BAND = tok('band', '#b4361a'), PDF_REMNANT = tok('teal-700', '#0b6e66');
+  var KEY = 'rozkroj-app-v1';
+  // Standardowy format płyty meblowej laminowanej 18 mm (Swiss Krono, Kronospan, Egger): 2800 × 2070 mm — domyślny dla nowych płyt.
+  var STD_SHEET = { l: '2800', w: '2070' };
+  var EXAMPLE = {
+    example: true, kerf: '4', trim: '10', allow: '50', grainAll: false,
+    stocks: [{ c: '', l: STD_SHEET.l, w: STD_SHEET.w, q: '' }],
+    parts: [
+      { n: 'Bok', l: '2000', w: '560', q: '2', el: 1, es: 0 },
+      { n: 'Wieniec', l: '864', w: '560', q: '2', el: 1, es: 0 },
+      { n: 'Półka', l: '862', w: '540', q: '4', el: 1, es: 0 },
+      { n: 'Drzwi', l: '1996', w: '446', q: '2', el: 2, es: 2 },
+      { n: 'Front szuflady', l: '440', w: '180', q: '3', el: 2, es: 2 },
+      { n: 'Cokół', l: '864', w: '100', q: '1', el: 1, es: 0 },
+      { n: 'Listwa', l: '864', w: '80', q: '2', el: 0, es: 0 }
+    ]
+  };
+  var state = load() || JSON.parse(JSON.stringify(EXAMPLE));
+  if (state.allow == null) state.allow = '50';
+  if (state.edgeT == null) state.edgeT = '1';
+  if (state.dimMode !== 'netto') state.dimMode = 'brutto';
+  var open = {}, timer = null, last = null, dl = null;
+  /* Wymiary formatki: wpisane = brutto (gotowa formatka z okleiną). Netto = do cięcia: każda oklejona krawędź
+     pomniejsza wymiar prostopadły o grubość okleiny (okleina na długości zmniejsza szerokość i odwrotnie). */
+  function edgeT() { return Math.max(0, num(state.edgeT)); }
+  function nettoDims(p) { var t = edgeT(); return { l: Math.max(0, num(p.l) - (+p.es || 0) * t), w: Math.max(0, num(p.w) - (+p.el || 0) * t) }; }
+  function cutDims(p) { return state.dimMode === 'netto' ? nettoDims(p) : { l: num(p.l), w: num(p.w) }; }
+  function dimTxt(p) { var d = cutDims(p); return mm(d.l) + '×' + mm(d.w); }
+  function edgeMm(p, q) { var A = Math.max(0, num(state.allow)); return q * ((+p.el || 0) * (num(p.l) + A) + (+p.es || 0) * (num(p.w) + A)); }
+  function $(id) { return document.getElementById(id); }
+  function load() { try { var s = JSON.parse(localStorage.getItem(KEY)); return s && s.parts && s.stocks ? s : null; } catch (e) { return null; } }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+  function num(v) { var x = parseFloat(String(v == null ? '' : v).replace(',', '.').replace(/\s/g, '')); return isFinite(x) ? x : 0; }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function fmt(x, d) { return x.toLocaleString('pl-PL', { minimumFractionDigits: d || 0, maximumFractionDigits: d || 0 }); }
+  function mm(x) { return fmt(x, Math.abs(x - Math.round(x)) > 0.01 ? 1 : 0); }
+  function ciec(n) { var a = n % 10, b = n % 100; return n === 1 ? 'cięcie' : (a >= 2 && a <= 4 && !(b >= 12 && b <= 14) ? 'cięcia' : 'cięć'); }
+  function plyty(n) { var a = n % 10, b = n % 100; return n === 1 ? 'płyta' : (a >= 2 && a <= 4 && !(b >= 12 && b <= 14) ? 'płyty' : 'płyt'); }
+
+  // Kod płyty (dekor producenta, np. Swiss Krono U3824 VL) dla płyty wyniku.
+  function stockCode(sh) { var s = sh && sh.ref != null ? state.stocks[sh.ref] : null; return s && s.c ? String(s.c).trim() : ''; }
+  function renderStocks() {
+    $('stocks').innerHTML = state.stocks.map(function (s, i) {
+      return '<div class="row" data-i="' + i + '">' +
+        '<input class="input" type="text" id="s' + i + '-c" data-k="c" aria-label="Kod płyty (dekor)" placeholder="np. U3824 VL" autocapitalize="characters" spellcheck="false" value="' + esc(s.c || '') + '">' +
+        '<input class="input" type="text" inputmode="decimal" id="s' + i + '-l" data-k="l" aria-label="Długość płyty w mm" value="' + esc(s.l) + '">' +
+        '<input class="input" type="text" inputmode="decimal" id="s' + i + '-w" data-k="w" aria-label="Szerokość płyty w mm" value="' + esc(s.w) + '">' +
+        '<input class="input" type="text" inputmode="numeric" id="s' + i + '-q" data-k="q" aria-label="Liczba płyt" placeholder="dowolnie" value="' + esc(s.q) + '">' +
+        '<button class="icon" type="button" data-act="del" aria-label="Usuń płytę"' + (state.stocks.length < 2 ? ' disabled' : '') + '>×</button></div>';
+    }).join('');
+  }
+  function eb(i, k, v, what, cls) { return '<div class="eb ' + cls + '">' + [1, 2].map(function (n) { return '<label><input type="checkbox" id="p' + i + '-' + k + n + '" data-e="' + k + '" aria-label="Okleina na ' + what + ', krawędź ' + n + '"' + ((+v || 0) >= n ? ' checked' : '') + '></label>'; }).join('') + '</div>'; }
+  var GRAIN_TXT = { '': 'Słoje: dowolnie, formatkę można obracać', l: 'Słoje wzdłuż długości', w: 'Słoje wzdłuż szerokości' };
+  // Ikona słojów: paski w kierunku słojów na miniaturze formatki (długość poziomo); ↻ = dowolnie.
+  function grainSvg(g) {
+    if (!g) return '<span aria-hidden="true">↻</span>';
+    var ln = g === 'l' ? [[4, 5, 18, 5], [4, 8, 18, 8], [4, 11, 18, 11]] : [[7, 3, 7, 13], [11, 3, 11, 13], [15, 3, 15, 13]];
+    return '<svg width="22" height="16" viewBox="0 0 22 16" aria-hidden="true"><rect x="1.5" y="1.5" width="19" height="13" fill="none" stroke="currentColor" stroke-width="1.2"/>' +
+      ln.map(function (c) { return '<line x1="' + c[0] + '" y1="' + c[1] + '" x2="' + c[2] + '" y2="' + c[3] + '" stroke="currentColor" stroke-width="1.4"/>'; }).join('') + '</svg>';
+  }
+  function grainBtn(p, i) {
+    var own = p.g === 'l' || p.g === 'w' ? p.g : '', eff = grainOf(p);
+    var label = GRAIN_TXT[eff] + (!own && eff ? ' (ustawienie dla wszystkich formatek)' : '') + '. Kliknij, żeby zmienić.';
+    return '<button class="icon sm grain c-g' + (!own && eff ? ' inherited' : '') + '" type="button" data-act="grain" id="p' + i + '-g" aria-label="' + label + '" title="' + label + '">' + grainSvg(eff) + '</button>';
+  }
+  function edCls(n) { n = +n || 0; return n ? ' ed' + Math.min(n, 2) : ''; }
+  // Wybór płyty formatki: lista płyt z kodem z panelu Płyty (bez powtórzeń kodu) + „bez płyty”.
+  function boardOptions(cur) {
+    var seen = {}, opts = [{ v: '', t: 'Bez przypisanej płyty' }];
+    state.stocks.forEach(function (s) { var c = String(s.c || '').trim(), k = CORE.keyOf(c); if (k && !seen[k]) { seen[k] = 1; opts.push({ v: c, t: c }); } });
+    var ck = CORE.keyOf(cur); if (ck && !seen[ck]) opts.push({ v: cur, t: cur + ' (brak w panelu Płyty)' });
+    return opts;
+  }
+  function boardSel(p, i) {
+    var cur = String(p.m || '').trim(), ck = CORE.keyOf(cur);
+    var label = cur ? 'Płyta formatki: ' + cur : 'Płyta formatki: bez przypisanej płyty';
+    return '<select class="input sm c-pl' + (ck ? '' : ' none') + '" id="p' + i + '-m" data-k="m" aria-label="' + esc(label) + '" title="' + esc(label) + '">' +
+      boardOptions(cur).map(function (o) { return '<option value="' + esc(o.v) + '"' + (CORE.keyOf(o.v) === ck ? ' selected' : '') + '>' + esc(o.v ? o.t : '— bez płyty') + '</option>'; }).join('') +
+      '</select>';
+  }
+  function partRow(p, i) {
+    return '<div class="row prt" data-i="' + i + '">' +
+      '<span class="sw" style="background:' + COLORS[i % COLORS.length] + '"></span>' +
+      '<input class="input sm c-nm" type="text" id="p' + i + '-n" data-k="n" placeholder="Nazwa" aria-label="Nazwa formatki" value="' + esc(p.n || '') + '">' +
+      '<input class="input sm c-l' + edCls(p.el) + '" type="text" inputmode="decimal" id="p' + i + '-l" data-k="l" aria-label="Długość w mm" value="' + esc(p.l) + '">' +
+      eb(i, 'el', p.el, 'długości', 'c-el') +
+      '<input class="input sm c-w' + edCls(p.es) + '" type="text" inputmode="decimal" id="p' + i + '-w" data-k="w" aria-label="Szerokość w mm" value="' + esc(p.w) + '">' +
+      eb(i, 'es', p.es, 'szerokości', 'c-ew') +
+      '<input class="input sm c-q" type="text" inputmode="numeric" id="p' + i + '-q" data-k="q" aria-label="Sztuk" value="' + esc(p.q) + '">' +
+      boardSel(p, i) + grainBtn(p, i) +
+      '<button class="icon sm c-del" type="button" data-act="del" aria-label="Usuń formatkę">×</button></div>';
+  }
+  // Gdy formatki mają przypisane płyty (np. z importu PRO100), lista jest pogrupowana według płyty; kolejność wierszy w grupie bez zmian.
+  // Szerokość pola nazwy = najdłuższa nazwa na liście (+ wewnętrzne marginesy pola); zmienna --nm-w dla siatki PartRow.
+  var nmCanvas = null;
+  function fitNameWidth() {
+    var plist = document.querySelector('.plist'); if (!plist) return;
+    nmCanvas = nmCanvas || document.createElement('canvas');
+    var g = nmCanvas.getContext('2d'), w = 0;
+    g.font = '500 16px ' + tok('font-body', 'Barlow, sans-serif');
+    state.parts.forEach(function (p) { w = Math.max(w, g.measureText(p.n || 'Nazwa').width); });
+    plist.style.setProperty('--nm-w', Math.ceil(w + 6 + 6 + 2 + 4) + 'px'); // padding 6+6, ramka 2, zapas 4
+  }
+  // po wczytaniu czcionki Barlow zmierz jeszcze raz (wcześniej pomiar idzie czcionką zastępczą i wychodzi za szeroko)
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { fitNameWidth(); });
+  function renderParts() {
+    var groups = [], byKey = {};
+    state.parts.forEach(function (p, i) {
+      var k = CORE.keyOf(p.m);
+      if (!byKey[k]) { byKey[k] = { k: k, m: (p.m || '').trim(), t: p.t, rows: [] }; groups.push(byKey[k]); }
+      byKey[k].rows.push(i);
+    });
+    var grouped = groups.some(function (g) { return g.k; });
+    if (grouped) groups.sort(function (x, y) { return (x.k ? 0 : 1) - (y.k ? 0 : 1); });
+    $('parts').innerHTML = groups.map(function (g) {
+      var head = '';
+      if (grouped) {
+        var n = g.rows.length, word = n === 1 ? 'formatka' : (n % 10 >= 2 && n % 10 <= 4 && !(n % 100 >= 12 && n % 100 <= 14) ? 'formatki' : 'formatek');
+        head = '<div class="prt-group" role="heading" aria-level="3"><b>' + (g.k ? esc(g.m) : 'Bez przypisanej płyty') + '</b>' +
+          '<span>' + (g.t ? esc(g.t) + ' mm · ' : '') + n + ' ' + word + '</span></div>';
+      }
+      return head + g.rows.map(function (i) { return partRow(state.parts[i], i); }).join('');
+    }).join('');
+    fitNameWidth();
+    $('example').hidden = !state.example;
+  }
+  function renderSettings() { $('kerf').value = state.kerf; $('trim').value = state.trim; $('allow').value = state.allow; $('edgeT').value = state.edgeT; $('grain').checked = !!state.grainAll; renderDimMode(); }
+  function renderDimMode() {
+    $('subEdge').checked = state.dimMode === 'netto';
+    $('dm-note').textContent = state.dimMode === 'netto'
+      ? 'Wymiary do cięcia (netto): każda oklejona krawędź zmniejsza wymiar formatki w poprzek o ' + mm(edgeT()) + ' mm, np. okleina na długości zmniejsza szerokość.'
+      : 'Rozkrój na wymiarach wpisanych (gotowa formatka razem z okleiną).';
+  }
+
+  function grainOf(p) { return p.g === 'l' || p.g === 'w' ? p.g : (state.grainAll ? 'l' : ''); }
+  function inputs() {
+    var map = [], parts = [];
+    state.parts.forEach(function (p, i) {
+      var d = cutDims(p), l = d.l, w = d.w, q = Math.floor(num(p.q));
+      if (l > 0 && w > 0 && q > 0) {
+        // słoje: 'l' = wzdłuż długości (bez obrotu), 'w' = wzdłuż szerokości (zawsze obrócona), '' = dowolnie (obrót dozwolony)
+        var g = grainOf(p); map.push(i);
+        parts.push(g === 'w' ? { l: w, w: l, q: Math.min(q, 2000), r: false, m: p.m || '' } : { l: l, w: w, q: Math.min(q, 2000), r: g !== 'l', m: p.m || '' });
+      }
+    });
+    var stocks = state.stocks.map(function (s) { return { c: s.c || '', l: num(s.l), w: num(s.w), q: String(s.q).trim() === '' ? Infinity : Math.floor(num(s.q)) }; });
+    var o = { kerf: Math.max(0, num(state.kerf)), trim: Math.max(0, num(state.trim)), grainAll: !!state.grainAll };
+    return { map: map, parts: parts, stocks: stocks, o: o };
+  }
+  function compute() {
+    timer = null;
+    var inp = inputs(), map = inp.map, parts = inp.parts, stocks = inp.stocks, o = inp.o;
+    save();
+    var id = ++job;
+    if (worker) { worker.terminate(); worker = null; }
+    // szybki podgląd od razu, potem dokładniejsze szukanie w tle
+    draw(CORE.optimize(parts, stocks, Object.assign({ budget: 40 }, o)), map, false);
+    worker = makeWorker();
+    if (!worker) { draw(CORE.optimize(parts, stocks, Object.assign({ budget: 400 }, o)), map, true); return; }
+    worker.onmessage = function (e) {
+      if (e.data.id !== id) return;
+      draw(e.data.res, map, e.data.res.done);
+      if (e.data.res.done) { worker.terminate(); worker = null; }
+    };
+    worker.onerror = function () { if (id === job) { worker = null; draw(CORE.optimize(parts, stocks, Object.assign({ budget: 400 }, o)), map, true); } };
+    worker.postMessage({ id: id, parts: parts, stocks: stocks, o: Object.assign({ budget: 3000 }, o) });
+  }
+  var CORE = rozkrojCore(), worker = null, job = 0, workerUrl = null;
+  function makeWorker() {
+    try {
+      if (!workerUrl) workerUrl = URL.createObjectURL(new Blob(['var C=(' + rozkrojCore.toString() + ')();onmessage=function(e){var d=e.data;' +
+        'var r=C.optimize(d.parts,d.stocks,d.o,function(p){postMessage({id:d.id,res:p});});postMessage({id:d.id,res:r});};'], { type: 'text/javascript' }));
+      return new Worker(workerUrl);
+    } catch (e) { return null; }
+  }
+  // Natychmiastowy pełny wynik (np. przed eksportem), gdy liczenie jeszcze trwa.
+  function finishNow() {
+    if (!timer && !worker && last && last.done) return;
+    clearTimeout(timer); timer = null;
+    if (worker) { worker.terminate(); worker = null; }
+    job++;
+    var inp = inputs();
+    draw(CORE.optimize(inp.parts, inp.stocks, Object.assign({ budget: 3000 }, inp.o)), inp.map, true);
+  }
+  function draw(res, map, done) {
+    var partArea = 0, total = 0, cut = 0, cuts = 0, edge = 0, placedCount = {};
+    res.sheets.forEach(function (sh) { total += sh.L * sh.W; partArea += sh.area; cut += sh.cut; cuts += sh.cuts || 0; sh.placed.forEach(function (p) { placedCount[p.pi] = (placedCount[p.pi] || 0) + 1; }); });
+    Object.keys(placedCount).forEach(function (pi) { var p = state.parts[map[pi]]; edge += edgeMm(p, placedCount[pi]); });
+    var util = total ? partArea / total * 100 : 0, n = res.sheets.length;
+    last = { res: res, map: map, util: util, waste: (total - partArea) / 1e6, cut: cut / 1000, cuts: cuts, edge: edge / 1000, done: !!done };
+    var st = '';
+    if (n && !done) st = 'Szukam lepszego rozkroju…';
+    else if (n && !res.unplaced.length && res.lb != null) st = n <= res.lb ? 'Najmniejsza możliwa liczba płyt.' :
+      'Gotowe. Teoretyczne minimum to ' + res.lb + ' ' + plyty(res.lb) + ', ale tylko gdyby formatki wypełniły płytę bez reszty.';
+    else if (n) st = 'Gotowe.';
+    var big = null;
+    res.sheets.forEach(function (sh, si) { remnants(sh).forEach(function (f) { if (!big || f.w * f.h > big.f.w * big.f.h) big = { f: f, si: si }; }); });
+    if (big && done) st += ' Największy cały odpad: ' + mm(Math.floor(big.f.w)) + '×' + mm(Math.floor(big.f.h)) + ' mm (płyta ' + (big.si + 1) + ').';
+    if (n && done && res.scatter != null) st += ' Odpad między formatkami: ' + fmt(res.scatter / 1e6, 2) + ' m²' + (res.scatter < 1e4 ? ', formatki leżą zwartym blokiem.' : '.');
+    if (done && res.missing && res.missing.length) st += ' Brak płyty o kodzie ' + res.missing.join(', ') + ' w panelu Płyty — te formatki ułożono na płytach bez kodu.';
+    $('opt-state').textContent = st;
+    $('tiles').innerHTML =
+      '<div class="tile main"><b>' + n + ' ' + plyty(n) + '</b><span>do kupienia lub zużycia</span></div>' +
+      '<div class="tile"><b>' + fmt(util, 1) + '%</b><span>wykorzystanie</span></div>' +
+      '<div class="tile"><b>' + fmt((total - partArea) / 1e6, 2) + ' m²</b><span>odpad</span></div>' +
+      '<div class="tile"><b>' + fmt(cut / 1000, 1) + ' m</b><span>' + cuts + ' ' + ciec(cuts) + ' (około)</span></div>' +
+      '<div class="tile"><b>' + fmt(edge / 1000, 1) + ' mb</b><span>' + (num(state.allow) > 0 ? 'okleiny z naddatkiem' : 'okleiny') + '</span></div>';
+    $('dock-txt').textContent = n ? n + ' ' + plyty(n) + ' · ' + fmt(util, 0) + '%' : 'Brak rozkroju';
+    $('sb-n').textContent = n || '–'; $('sb-u').textContent = n ? fmt(util, 1) + '%' : '–'; $('sb-w').textContent = n ? fmt((total - partArea) / 1e6, 2) + ' m²' : '–';
+    var w = '';
+    if (res.unplaced.length) {
+      var g = {}; res.unplaced.forEach(function (it) { g[it.pi] = (g[it.pi] || 0) + 1; });
+      w = '<div class="notice warn" role="alert">Nie zmieściło się: ' + Object.keys(g).map(function (pi) { var p = state.parts[map[pi]]; return g[pi] + '× ' + dimTxt(p) + (p.n ? ' ' + esc(p.n) : ''); }).join(', ') +
+        '. Sprawdź wymiary i liczbę płyt, obrównanie oraz czy nie blokuje jej kierunek słojów.</div>';
+    } else if (!n) w = '<p class="note">Dodaj formatkę z długością, szerokością i liczbą sztuk.</p>';
+    $('warn').innerHTML = w;
+    $('sheets').innerHTML = res.sheets.map(function (sh, si) { return sheetHtml(sh, si, map); }).join('');
+  }
+  /* Okleina na rysunku: pasek wzdłuż oklejonej krawędzi formatki (w jednostkach płyty, mm), kolor: token band. */
+  /* Całe kawałki odpadu warte zachowania: do 2 największych na płycie, krótszy bok ≥ 200 mm. */
+  function remnants(sh) {
+    return sh.free.filter(function (f) { return Math.min(f.w, f.h) >= 200; })
+      .sort(function (x, y) { return y.w * y.h - x.w * x.h; }).slice(0, 2);
+  }
+  function bands(p, src, t) {
+    var el = +src.el || 0, es = +src.es || 0;
+    if (!el && !es) return [];
+    var rot = Math.abs(p.a - cutDims(src).l) > 0.01; // obrócona: długość formatki leży pionowo
+    var hor = rot ? es : el, ver = rot ? el : es, r = [];
+    // linia odsunięta od konturu o swoją grubość, żeby nie zlewała się z czarną krawędzią
+    t = Math.min(t, p.a / 8, p.b / 8);
+    var g = t, x0 = p.x + g, y0 = p.y + g, w0 = p.a - 2 * g, h0 = p.b - 2 * g;
+    if (hor >= 1) r.push({ x: x0, y: y0, w: w0, h: t });
+    if (hor >= 2) r.push({ x: x0, y: y0 + h0 - t, w: w0, h: t });
+    if (ver >= 1) r.push({ x: x0, y: y0, w: t, h: h0 });
+    if (ver >= 2) r.push({ x: x0 + w0 - t, y: y0, w: t, h: h0 });
+    return r;
+  }
+  /* Słoje płyty (wzór B): nieregularne kreski różnej długości wzdłuż długości płyty (oś X), jak usłojenie forniru.
+     Kafelek 120×18 jednostek, skalowany do płyty; wzór w układzie płyty, więc ciągnie się przez wszystkie formatki. Kolor: token grain. */
+  // Słoje rysujemy tylko wtedy, gdy kierunek ma znaczenie: choć jedna formatka ma ustawione słoje (także przez opcję dla wszystkich).
+  function showGrain() { return state.parts.some(function (p) { return !!grainOf(p); }); }
+  var GRAIN_SEGS = [[4, 70, 3], [82, 116, 3], [20, 110, 8], [0, 34, 12.5], [46, 96, 12.5], [10, 58, 16.5], [70, 120, 16.5]];
+  function grainPattern(id, L) {
+    var w = L / 6, h = L / 40, sx = w / 120, sy = h / 18, sw = L / 900;
+    return '<pattern id="' + id + '" width="' + w + '" height="' + h + '" patternUnits="userSpaceOnUse"><g stroke="var(--grain)" stroke-width="' + sw + '" stroke-linecap="round">' +
+      GRAIN_SEGS.map(function (q) { return '<line x1="' + q[0] * sx + '" y1="' + q[2] * sy + '" x2="' + q[1] * sx + '" y2="' + q[2] * sy + '"/>'; }).join('') + '</g></pattern>';
+  }
+  function sheetHtml(sh, si, map) {
+    var L = sh.L, W = sh.W, trim = Math.max(0, num(state.trim)), u = sh.area / (L * W) * 100, minFs = L / 46, step = L / 36, banded = false, grain = showGrain();
+    var svg = '<svg class="plan" viewBox="0 0 ' + L + ' ' + W + '" role="img" aria-label="Schemat cięcia płyty ' + (si + 1) + '">' +
+      '<defs><pattern id="h' + si + '" width="' + step + '" height="' + step + '" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="' + step + '" stroke="var(--hatch)" stroke-width="' + step / 6 + '"/></pattern>' + (grain ? grainPattern('g' + si, L) : '') + '</defs>' +
+      '<rect width="' + L + '" height="' + W + '" fill="url(#h' + si + ')"/>';
+    if (trim > 0) svg += '<rect x="' + trim + '" y="' + trim + '" width="' + (L - 2 * trim) + '" height="' + (W - 2 * trim) + '" fill="none" stroke="var(--muted)" stroke-dasharray="' + L / 70 + '" vector-effect="non-scaling-stroke"/>';
+    remnants(sh).forEach(function (f) {
+      var lab = 'odpad ' + mm(Math.floor(f.w)) + '×' + mm(Math.floor(f.h)), long = Math.max(f.w, f.h), short = Math.min(f.w, f.h);
+      var fs = Math.min(short * 0.35, long * 0.85 / (lab.length * 0.5), L / 30), cx = f.x + f.w / 2, cy = f.y + f.h / 2;
+      svg += '<rect x="' + f.x + '" y="' + f.y + '" width="' + f.w + '" height="' + f.h + '" fill="var(--surface)" fill-opacity=".55" stroke="var(--remnant)" stroke-width="2" stroke-dasharray="' + L / 90 + '" vector-effect="non-scaling-stroke"/>';
+      if (fs >= minFs * 0.8) svg += '<text x="' + cx + '" y="' + (cy + fs * 0.35) + '" font-size="' + fs + '" fill="var(--remnant)" text-anchor="middle" font-family="Barlow Condensed,Arial Narrow,Arial,sans-serif" font-weight="600"' +
+        (f.h > f.w ? ' transform="rotate(-90 ' + cx + ' ' + cy + ')"' : '') + '>' + lab + '</text>';
+    });
+    var counts = {};
+    sh.placed.forEach(function (p) {
+      var src = state.parts[map[p.pi]], col = COLORS[map[p.pi] % COLORS.length];
+      counts[p.pi] = (counts[p.pi] || 0) + 1;
+      svg += '<rect x="' + p.x + '" y="' + p.y + '" width="' + p.a + '" height="' + p.b + '" fill="' + col + '" stroke="var(--plan-ink)" stroke-width="1" vector-effect="non-scaling-stroke"/>' +
+        (grain ? '<rect x="' + p.x + '" y="' + p.y + '" width="' + p.a + '" height="' + p.b + '" fill="url(#g' + si + ')" pointer-events="none"/>' : '');
+      bands(p, src, L / 350).forEach(function (r) { banded = true; svg += '<rect x="' + r.x + '" y="' + r.y + '" width="' + r.w + '" height="' + r.h + '" fill="var(--band)"/>'; });
+      var label = dimTxt(src), long = Math.max(p.a, p.b), short = Math.min(p.a, p.b);
+      var fs = Math.min(short * 0.5, long * 0.9 / (label.length * 0.56), L / 22);
+      if (fs < minFs) return;
+      var cx = p.x + p.a / 2, cy = p.y + p.b / 2, tr = p.b > p.a ? ' transform="rotate(-90 ' + cx + ' ' + cy + ')"' : '';
+      var name = src.n && short > fs * 2.5 && src.n.length * 0.5 * fs * 0.7 < long * 0.9 ? src.n : '';
+      svg += '<g' + tr + ' fill="var(--plan-ink)" text-anchor="middle" font-family="Barlow Condensed,Arial Narrow,Arial,sans-serif" font-weight="600">' +
+        '<text x="' + cx + '" y="' + (cy + fs * 0.35 - (name ? fs * 0.4 : 0)) + '" font-size="' + fs + '">' + label + '</text>' +
+        (name ? '<text x="' + cx + '" y="' + (cy + fs * 0.95) + '" font-size="' + fs * 0.7 + '" font-weight="400">' + esc(name) + '</text>' : '') + '</g>';
+    });
+    var chips = Object.keys(counts).map(function (pi) { var p = state.parts[map[pi]]; return '<li><i style="background:' + COLORS[map[pi] % COLORS.length] + '"></i>' + counts[pi] + '× ' + dimTxt(p) + (p.n ? ' ' + esc(p.n) : '') + '</li>'; }).join('') +
+      (grain ? '<li><i class="grain"></i>słoje (wzdłuż płyty)</li>' : '') +
+      (banded ? '<li><i class="band"></i>okleina</li>' : '') +
+      (remnants(sh).length ? '<li><i class="remnant"></i>odpad do zachowania</li>' : '');
+    return '<section class="panel sheet"><div class="sheet-head"><h3>Płyta ' + (si + 1) + (stockCode(sh) ? ' · ' + esc(stockCode(sh)) : '') + '</h3><span>' + mm(L) + '×' + mm(W) + ' · wykorzystanie ' + fmt(u, 1) + '%' + (state.dimMode === 'netto' ? ' · wymiary netto' : '') + (sh.scatter != null ? ' · między formatkami ' + fmt(sh.scatter / 1e6, 2) + ' m²' : '') + '</span></div>' +
+      '<div class="bar" aria-hidden="true"><i style="width:' + u.toFixed(1) + '%"></i></div>' + svg + '</svg><ul class="chips">' + chips + '</ul></section>';
+  }
+  function schedule() { dirty = true; projState(); clearTimeout(timer); timer = setTimeout(compute, 220); }
+  function touched() { if (state.example) { state.example = false; $('example').hidden = true; } }
+
+  $('parts').addEventListener('input', function (e) {
+    var row = e.target.closest('.row'), k = e.target.dataset.k, ek = e.target.dataset.e; if (!row || (!k && !ek)) return;
+    var p = state.parts[+row.dataset.i];
+    if (ek) {
+      p[ek] = row.querySelectorAll('input[data-e="' + ek + '"]:checked').length;
+      var dim = row.querySelector(ek === 'el' ? '.c-l' : '.c-w'); // znaczniki okleiny na polu wymiaru
+      if (dim) { dim.classList.remove('ed1', 'ed2'); if (p[ek]) dim.classList.add('ed' + Math.min(p[ek], 2)); }
+    }
+    else p[k] = e.target.type === 'checkbox' ? e.target.checked : (k === 'el' || k === 'es' ? +e.target.value : e.target.value);
+    if (k === 'n') fitNameWidth();
+    touched(); schedule();
+  });
+  // Zmiana płyty formatki: przebuduj grupy listy, fokus wraca na wybór płyty tej formatki.
+  $('parts').addEventListener('change', function (e) {
+    if (e.target.dataset.k !== 'm') return;
+    var id = e.target.id; renderParts(); var f = $(id); if (f) f.focus();
+  });
+  // Zmiana kodu w panelu Płyty odświeża listę płyt przy formatkach.
+  $('stocks').addEventListener('change', function (e) { if (e.target.dataset.k === 'c') renderParts(); });
+  $('parts').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-act]'); if (!b) return;
+    var i = +b.closest('.row').dataset.i;
+    if (b.dataset.act === 'del') { state.parts.splice(i, 1); touched(); renderParts(); schedule(); }
+    else if (b.dataset.act === 'grain') {
+      var p = state.parts[i], cur = p.g === 'l' || p.g === 'w' ? p.g : '';
+      p.g = { '': 'l', l: 'w', w: '' }[cur]; // dowolnie → wzdłuż długości → wzdłuż szerokości → dowolnie
+      b.outerHTML = grainBtn(p, i); var nb = $('p' + i + '-g'); if (nb) nb.focus();
+      touched(); schedule();
+    }
+  });
+  $('stocks').addEventListener('input', function (e) {
+    var row = e.target.closest('.row'), k = e.target.dataset.k; if (!row || !k) return;
+    state.stocks[+row.dataset.i][k] = e.target.value; schedule();
+  });
+  $('stocks').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-act]'); if (!b || state.stocks.length < 2) return;
+    state.stocks.splice(+b.closest('.row').dataset.i, 1); renderStocks(); schedule();
+  });
+  $('add-stock').addEventListener('click', function () { state.stocks.push({ c: '', l: STD_SHEET.l, w: STD_SHEET.w, q: '1' }); renderStocks(); var f = $('s' + (state.stocks.length - 1) + '-c'); if (f) f.focus(); });
+  $('add-part').addEventListener('click', function () {
+    state.parts.push({ n: '', l: '', w: '', q: '1', el: 0, es: 0 }); touched(); renderParts();
+    var f = $('p' + (state.parts.length - 1) + '-n'); if (f) f.focus();
+  });
+  $('clear').addEventListener('click', function () { state.parts = [{ n: '', l: '', w: '', q: '1', el: 0, es: 0 }]; open = {}; touched(); renderParts(); schedule(); });
+  ['kerf', 'trim', 'allow', 'edgeT'].forEach(function (id) { $(id).addEventListener('input', function (e) { state[id] = e.target.value; if (id === 'edgeT') renderDimMode(); schedule(); }); });
+  $('subEdge').addEventListener('change', function (e) { state.dimMode = e.target.checked ? 'netto' : 'brutto'; renderDimMode(); schedule(); });
+  $('grain').addEventListener('change', function (e) { state.grainAll = e.target.checked; renderParts(); schedule(); });
+  /* ---- Import listy formatek z PRO100: nazwa, dł., okl., szer., okl., grubość, ilość, płyta (Tab) ---- */
+  function edgeMark(t) { t = String(t || '').trim(); return t === '=' ? 2 : /^[-–—_]$/.test(t) ? 1 : 0; }
+  function isNum(t) { return /^\d+([.,]\d+)?$/.test(String(t || '').trim()); }
+  function parsePro100(text) {
+    var rows = [];
+    text.replace(/^\uFEFF/, '').split(/\r?\n/).forEach(function (line) {
+      if (!line.trim()) return;
+      var c = line.split('\t').map(function (t) { return t.trim(); });
+      if (c.length < 7 || !isNum(c[1]) || !isNum(c[3]) || !isNum(c[6])) return;
+      rows.push({ n: c[0], l: c[1].replace(',', '.'), el: edgeMark(c[2]), w: c[3].replace(',', '.'), es: edgeMark(c[4]), t: c[5], q: c[6], m: (c[7] || '').trim() });
+    });
+    return rows;
+  }
+  function importRows(rows, source) {
+    if (!rows.length) return 0;
+    if (state.example) state.parts = []; // przykład zastępujemy, własną listę uzupełniamy
+    state.parts = state.parts.filter(function (p) { return p.l !== '' || p.w !== '' || p.n; });
+    rows.forEach(function (r) { state.parts.push({ n: r.n, l: r.l, w: r.w, q: r.q || '1', el: r.el, es: r.es, t: r.t, m: r.m }); });
+    // każda płyta z pliku, której nie ma w panelu Płyty, dostaje wiersz z kodem i wymiarami pierwszej płyty
+    var have = {}, addedStocks = [];
+    state.stocks.forEach(function (s) { have[CORE.keyOf(s.c)] = 1; });
+    rows.forEach(function (r) {
+      var k = CORE.keyOf(r.m);
+      if (k && !have[k]) { have[k] = 1; state.stocks.push({ c: r.m, l: STD_SHEET.l, w: STD_SHEET.w, q: '' }); addedStocks.push(r.m); }
+    });
+    touched(); renderStocks(); renderParts(); schedule();
+    $('io-msg').textContent = 'Dodano z ' + source + ': ' + rows.length + ' ' + (rows.length === 1 ? 'formatkę' : rows.length < 5 ? 'formatki' : 'formatek') +
+      (addedStocks.length ? '. Nowe płyty: ' + addedStocks.join(', ') + ' (wymiary standardowe ' + STD_SHEET.l + '×' + STD_SHEET.w + ' mm, sprawdź je).' : '.');
+    return rows.length;
+  }
+  $('pro-btn').addEventListener('click', function () { $('pro-file').click(); });
+  $('pro-file').addEventListener('change', function (e) {
+    var f = e.target.files && e.target.files[0]; if (!f) return;
+    function read(enc) { return new Promise(function (res, rej) { var r = new FileReader(); r.onload = function () { res(r.result); }; r.onerror = rej; r.readAsText(f, enc); }); }
+    read('utf-8').then(function (t) { return /\uFFFD/.test(t) ? read('windows-1250') : t; }).then(function (t) { // starsze eksporty bywają w Windows-1250
+      if (!importRows(parsePro100(t), 'pliku „' + f.name + '”')) $('io-msg').textContent = 'Nie znalazłem formatek w formacie PRO100 (pola oddzielone tabulatorem).';
+    }, function () { $('io-msg').textContent = 'Nie udało się odczytać pliku.'; });
+    e.target.value = '';
+  });
+  $('import').addEventListener('click', function () {
+    var pro = parsePro100($('paste').value);
+    if (pro.length) { importRows(pro, 'PRO100'); $('paste').value = ''; return; }
+    var added = 0;
+    $('paste').value.split(/\r?\n/).forEach(function (line) {
+      if (!line.trim()) return;
+      var tok = /[\t;]/.test(line) ? line.split(/[\t;]+/) : line.split(/[\s×xX*]+/), nums = [], words = [];
+      tok.forEach(function (t) { t = t.trim(); if (!t) return; if (/^\d+([.,]\d+)?$/.test(t) && nums.length < 3) nums.push(t); else words.push(t); });
+      if (nums.length < 2) return;
+      state.parts.push({ n: words.join(' '), l: nums[0], w: nums[1], q: nums[2] || '1', el: 0, es: 0 }); added++;
+    });
+    if (added) { state.parts = state.parts.filter(function (p) { return p.l !== '' || p.w !== '' || p.n; }); touched(); $('paste').value = ''; renderParts(); schedule(); }
+    $('io-msg').textContent = added ? 'Dodano: ' + added : 'Nie znalazłem wymiarów. Każdy wiersz potrzebuje długości i szerokości.';
+  });
+  $('copy').addEventListener('click', function () {
+    var txt = state.parts.map(function (p) { return [p.l, p.w, p.q, p.n || ''].join('\t'); }).join('\n');
+    try { navigator.clipboard.writeText(txt).then(function () { $('io-msg').textContent = 'Skopiowano listę.'; }, fail); } catch (e) { fail(); }
+    function fail() { $('paste').value = txt; $('paste').select(); $('io-msg').textContent = 'Lista jest w polu powyżej. Zaznacz ją i skopiuj.'; }
+  });
+  $('go').addEventListener('click', function () { $('wynik').scrollIntoView({ block: 'start' }); });
+
+  /* ---- Eksport: PDF (strona A4 na płytę + lista formatek) i CSV ---- */
+  var PW = 1754, PH = 1240, M = 60, F = 'Barlow, Arial, sans-serif', FC = '"Barlow Condensed", "Arial Narrow", Arial, sans-serif';
+  function page() {
+    var c = document.createElement('canvas'); c.width = PW; c.height = PH;
+    var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, PW, PH); g.textBaseline = 'alphabetic';
+    return c;
+  }
+  // Słoje w PDF: ten sam wzór B co na ekranie, w układzie płyty (ciągły przez formatki).
+  var PDF_GRAIN = tok('grain', 'rgba(24, 32, 30, 0.32)');
+  function drawGrain(g, px, py, a, b, ox, oy, Lpx) {
+    var w = Lpx / 6, h = Lpx / 40, sx = w / 120, sy = h / 18;
+    g.save(); g.beginPath(); g.rect(px, py, a, b); g.clip();
+    g.strokeStyle = PDF_GRAIN; g.lineWidth = 1.3; g.lineCap = 'round'; g.beginPath();
+    for (var ky = Math.floor((py - oy) / h); ky <= Math.ceil((py + b - oy) / h); ky++)
+      for (var kx = Math.floor((px - ox) / w); kx <= Math.ceil((px + a - ox) / w); kx++)
+        GRAIN_SEGS.forEach(function (q) { var y = oy + ky * h + q[2] * sy; g.moveTo(ox + kx * w + q[0] * sx, y); g.lineTo(ox + kx * w + q[1] * sx, y); });
+    g.stroke(); g.restore();
+  }
+  function sheetPage(sh, si, n) {
+    var c = page(), g = c.getContext('2d'), map = last.map, trim = Math.max(0, num(state.trim)), kerf = Math.max(0, num(state.kerf)), grain = showGrain();
+    g.fillStyle = '#111'; g.font = '600 36px ' + F; g.fillText((state.name ? state.name + ' · ' : '') + 'Płyta ' + (si + 1) + ' z ' + n + (stockCode(sh) ? ' · ' + stockCode(sh) : ''), M, M + 30);
+    g.fillStyle = '#444'; g.font = '22px ' + F;
+    g.fillText(mm(sh.L) + ' × ' + mm(sh.W) + ' mm · wykorzystanie ' + fmt(sh.area / (sh.L * sh.W) * 100, 1) + '% · rzaz ' + mm(kerf) + ' mm · obrównanie ' + mm(trim) + ' mm' + (state.dimMode === 'netto' ? ' · wymiary netto (okleina ' + mm(edgeT()) + ' mm)' : ' · wymiary brutto'), M, M + 66);
+    var counts = {}, order = [];
+    sh.placed.forEach(function (p) { if (!counts[p.pi]) { counts[p.pi] = 0; order.push(p.pi); } counts[p.pi]++; });
+    g.font = '22px ' + F;
+    var chips = order.map(function (pi) { var p = state.parts[map[pi]], t = counts[pi] + '× ' + dimTxt(p) + (p.n ? ' ' + p.n : ''); return { t: t, w: g.measureText(t).width + 26 + 28, col: COLORS[map[pi] % COLORS.length] }; });
+    if (sh.placed.some(function (p) { var s = state.parts[map[p.pi]]; return (+s.el || 0) + (+s.es || 0) > 0; })) chips.push({ t: 'okleina', w: g.measureText('okleina').width + 26 + 28, col: BAND, band: true });
+    var lines = 1, x = 0;
+    chips.forEach(function (ch) { if (x + ch.w > PW - 2 * M && x > 0) { lines++; x = 0; } ch.line = lines - 1; ch.x = x; x += ch.w; });
+    var legendH = lines * 34, top = M + 92, bottom = PH - M - legendH - 18;
+    var sc = Math.min((PW - 2 * M) / sh.L, (bottom - top) / sh.W), ox = M, oy = top, w = sh.L * sc, h = sh.W * sc;
+    g.fillStyle = '#e6e9e8'; g.fillRect(ox, oy, w, h);
+    g.save(); g.beginPath(); g.rect(ox, oy, w, h); g.clip(); g.strokeStyle = '#c3c9c7'; g.lineWidth = 2; g.beginPath();
+    for (var d = -h; d < w; d += 18) { g.moveTo(ox + d, oy + h); g.lineTo(ox + d + h, oy); }
+    g.stroke(); g.restore();
+    if (trim > 0) { g.save(); g.setLineDash([8, 6]); g.strokeStyle = '#777'; g.lineWidth = 1; g.strokeRect(ox + trim * sc, oy + trim * sc, w - 2 * trim * sc, h - 2 * trim * sc); g.restore(); }
+    sh.placed.forEach(function (p) {
+      var src = state.parts[map[p.pi]], px = ox + p.x * sc, py = oy + p.y * sc, a = p.a * sc, b = p.b * sc;
+      g.fillStyle = COLORS[map[p.pi] % COLORS.length]; g.fillRect(px, py, a, b);
+      g.strokeStyle = '#111'; g.lineWidth = 1.5; g.strokeRect(px, py, a, b);
+      if (grain) drawGrain(g, px, py, a, b, ox, oy, sh.L * sc);
+      g.fillStyle = BAND;
+      bands(p, src, 3.5 / sc).forEach(function (r) { g.fillRect(ox + r.x * sc, oy + r.y * sc, r.w * sc, r.h * sc); });
+      var label = dimTxt(src), long = Math.max(a, b), short = Math.min(a, b);
+      var fs = Math.min(short * 0.5, long * 0.9 / (label.length * 0.56), 34);
+      if (fs < 11) return;
+      g.save(); g.translate(px + a / 2, py + b / 2); if (b > a) g.rotate(-Math.PI / 2);
+      g.textAlign = 'center'; g.fillStyle = '#111';
+      var name = '';
+      if (src.n && short > fs * 2.5) { g.font = (fs * 0.7) + 'px ' + FC; if (g.measureText(src.n).width < long * 0.9) name = src.n; }
+      g.font = '600 ' + fs + 'px ' + FC; g.fillText(label, 0, fs * 0.35 - (name ? fs * 0.4 : 0));
+      if (name) { g.font = (fs * 0.7) + 'px ' + FC; g.fillText(name, 0, fs * 0.95); }
+      g.restore();
+    });
+    remnants(sh).forEach(function (f) {
+      var rx = ox + f.x * sc, ry = oy + f.y * sc, rw = f.w * sc, rh = f.h * sc;
+      g.save(); g.fillStyle = 'rgba(255,255,255,.7)'; g.fillRect(rx, ry, rw, rh);
+      g.setLineDash([10, 6]); g.strokeStyle = PDF_REMNANT; g.lineWidth = 2; g.strokeRect(rx, ry, rw, rh); g.setLineDash([]);
+      var lab = 'odpad ' + mm(Math.floor(f.w)) + '×' + mm(Math.floor(f.h)), fs = Math.min(Math.min(rw, rh) * 0.35, Math.max(rw, rh) * 0.85 / (lab.length * 0.5), 30);
+      if (fs >= 10) {
+        g.translate(rx + rw / 2, ry + rh / 2); if (rh > rw) g.rotate(-Math.PI / 2);
+        g.textAlign = 'center'; g.fillStyle = PDF_REMNANT; g.font = '600 ' + fs + 'px ' + FC; g.fillText(lab, 0, fs * 0.35);
+      }
+      g.restore();
+    });
+    g.strokeStyle = '#111'; g.lineWidth = 2; g.strokeRect(ox, oy, w, h);
+    g.font = '22px ' + F; g.textAlign = 'left';
+    chips.forEach(function (ch) {
+      var cy = oy + h + 18 + ch.line * 34;
+      g.fillStyle = ch.col;
+      if (ch.band) g.fillRect(M + ch.x - 2, cy + 12, 22, 3.5);
+      else { g.fillRect(M + ch.x, cy + 4, 18, 18); g.strokeStyle = '#111'; g.lineWidth = 1; g.strokeRect(M + ch.x, cy + 4, 18, 18); }
+      g.fillStyle = '#111'; g.fillText(ch.t, M + ch.x + 26, cy + 21);
+    });
+    return c;
+  }
+  function listPages() {
+    var rows = last.map.map(function (i) { return { p: state.parts[i], i: i }; }), pages = [], per = 27;
+    for (var s = 0; s < rows.length || s === 0; s += per) {
+      var c = page(), g = c.getContext('2d'), n = last.res.sheets.length;
+      g.fillStyle = '#111'; g.font = '600 36px ' + F; g.fillText((state.name ? state.name + ' · ' : '') + 'Lista formatek', M, M + 30);
+      g.fillStyle = '#444'; g.font = '22px ' + F;
+      g.fillText(n + ' ' + plyty(n) + ' · wykorzystanie ' + fmt(last.util, 1) + '% · odpad ' + fmt(last.waste, 2) + ' m² · cięcia ok. ' + fmt(last.cut, 1) + ' m · okleina ' + fmt(last.edge, 1) + ' mb' + (num(state.allow) > 0 ? ' (z naddatkiem ' + mm(num(state.allow)) + ' mm na krawędź)' : ''), M, M + 66);
+      var cols = [['Nazwa', 100], ['Brutto (mm)', 620], ['Netto (mm)', 800], ['Sztuk', 980], ['Słoje', 1070], ['Okleina', 1240]], y = M + 130;
+      g.font = '600 20px ' + F; g.fillStyle = '#444'; cols.forEach(function (cl) { g.fillText(cl[0].toUpperCase(), cl[1], y); });
+      g.strokeStyle = '#111'; g.lineWidth = 2; g.beginPath(); g.moveTo(M, y + 12); g.lineTo(PW - M, y + 12); g.stroke();
+      rows.slice(s, s + per).forEach(function (r, k) {
+        var p = r.p, ry = y + 48 + k * 36, el = +p.el || 0, es = +p.es || 0, emb = edgeMm(p, Math.floor(num(p.q))) / 1000;
+        g.fillStyle = COLORS[r.i % COLORS.length]; g.fillRect(M, ry - 18, 22, 22); g.strokeStyle = '#111'; g.lineWidth = 1; g.strokeRect(M, ry - 18, 22, 22);
+        g.fillStyle = '#111'; g.font = '24px ' + F;
+        var nd = nettoDims(p), vals = [(p.n || '–') + (p.m ? ' (' + CORE.keyOf(p.m) + ')' : ''), mm(num(p.l)) + '×' + mm(num(p.w)), mm(nd.l) + '×' + mm(nd.w), String(Math.floor(num(p.q))), { '': 'dowolnie', l: 'wzdłuż dł.', w: 'wzdłuż szer.' }[grainOf(p)], (el || es) ? (el ? el + ' dł.' : '') + (el && es ? ' + ' : '') + (es ? es + ' szer.' : '') + ' = ' + fmt(emb, 2) + ' mb' : '–'];
+        vals.forEach(function (v, ci) { g.fillText(v, cols[ci][1], ry); });
+        g.strokeStyle = '#ccc'; g.beginPath(); g.moveTo(M, ry + 11); g.lineTo(PW - M, ry + 11); g.stroke();
+      });
+      pages.push(c);
+    }
+    return pages;
+  }
+  function msg(t) { $('ex-msg').textContent = t; }
+  function offer(filename, data) {
+    return dl.save({ filename: filename, data: data }).then(function () { msg('Zapisano ' + filename + '.'); }, function (e) {
+      msg(e && e.code === 'declined' ? 'Anulowano zapis.' : e && e.code === 'rate_limited' ? 'Poczekaj chwilę i spróbuj ponownie.' : 'Nie udało się zapisać pliku. Spróbuj ponownie.');
+    });
+  }
+  function ready() { if (last && last.res.sheets.length) return true; msg('Najpierw dodaj formatki, żeby powstał rozkrój.'); return false; }
+  $('pdf').addEventListener('click', function () {
+    if (!dl || !ready()) return;
+    if (!window.jspdf) { msg('Nie udało się wczytać modułu PDF. Odśwież stronę i spróbuj ponownie.'); return; }
+    finishNow(); msg('Przygotowuję PDF…');
+    var fonts = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
+    fonts.then(function () {
+      var doc = new window.jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' }), n = last.res.sheets.length;
+      var pages = last.res.sheets.map(function (sh, si) { return sheetPage(sh, si, n); }).concat(listPages());
+      pages.forEach(function (c, i) { if (i) doc.addPage(); doc.addImage(c.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, 297, 210); });
+      return offer('rozkroj-plyt.pdf', new Blob([doc.output('arraybuffer')]));
+    }).catch(function () { msg('Nie udało się przygotować PDF. Spróbuj ponownie.'); });
+  });
+  $('csv').addEventListener('click', function () {
+    if (!dl) return;
+    function q(v) { v = String(v == null ? '' : v); return /[;"\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
+    var rows = [['Nazwa', 'Płyta', 'Grubość (mm)', 'Długość brutto (mm)', 'Szerokość brutto (mm)', 'Długość netto (mm)', 'Szerokość netto (mm)', 'Sztuk', 'Słoje', 'Okleina na długości', 'Okleina na szerokości', 'Okleina (mb)']];
+    state.parts.forEach(function (p) { if (num(p.l) > 0 && num(p.w) > 0) var nd = nettoDims(p); rows.push([p.n || '', p.m || '', p.t || '', p.l, p.w, fmt(nd.l, nd.l % 1 ? 1 : 0), fmt(nd.w, nd.w % 1 ? 1 : 0), p.q, { '': 'dowolnie', l: 'wzdłuż długości', w: 'wzdłuż szerokości' }[grainOf(p)], +p.el || 0, +p.es || 0, fmt(edgeMm(p, Math.floor(num(p.q))) / 1000, 2)]); });
+    if (rows.length < 2) { msg('Lista formatek jest pusta.'); return; }
+    offer('formatki.csv', '﻿' + rows.map(function (r) { return r.map(q).join(';'); }).join('\r\n'));
+  });
+  /* Zwykłe pobieranie przez <a download>, gdy strona działa poza claude.ai */
+  var browserDl = { save: function (f) {
+    return new Promise(function (res, rej) {
+      try {
+        var type = /\.pdf$/i.test(f.filename) ? 'application/pdf' : /\.csv$/i.test(f.filename) ? 'text/csv;charset=utf-8' : 'application/octet-stream';
+        var blob = new Blob([f.data], { type: type });
+        var url = URL.createObjectURL(blob), a = document.createElement('a');
+        a.href = url; a.download = f.filename; a.style.display = 'none';
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function () { URL.revokeObjectURL(url); }, 10000);
+        res();
+      } catch (e) { rej(e); }
+    });
+  } };
+  function useBrowserDl() { dl = browserDl; $('export').hidden = false; }
+  if (window.claude && typeof window.claude.use === 'function') {
+    window.claude.use('downloads').then(function (d) {
+      if (d) { dl = d; $('export').hidden = false; } else useBrowserDl();
+    }, useBrowserDl);
+  } else useBrowserDl();
+
+  /* ---- Projekty: zapis na koncie (db) albo, gdy niedostępne, w tej przeglądarce ---- */
+  var PKEY = 'rozkroj-app-projekty-v1', store = null, projects = [], dirty = false, armed = null, listFailed = false;
+  function pmsg(t) { $('proj-msg').textContent = t; }
+  function localStore() {
+    function read() { try { return JSON.parse(localStorage.getItem(PKEY)) || {}; } catch (e) { return {}; } }
+    function write(o) { localStorage.setItem(PKEY, JSON.stringify(o)); }
+    return { cloud: false,
+      list: function () { var o = read(); return Promise.resolve(Object.keys(o).map(function (id) { return { id: id, name: o[id].name, updated: o[id].updated, data: o[id].data }; })); },
+      save: function (id, doc) { return new Promise(function (res) { var o = read(); id = id || ('p' + Date.now().toString(36)); o[id] = doc; write(o); res(id); }); },
+      del: function (id) { return new Promise(function (res) { var o = read(); delete o[id]; write(o); res(); }); } };
+  }
+  function cloudStore(db, uid) {
+    var col = db.collection('data/users/' + uid);
+    return { cloud: true,
+      list: function () { return col.get().then(function (sn) { return sn.docs.map(function (d) { var b = d.data() || {}; return { id: d.id, name: b.name, updated: b.updated, data: b.data }; }); }); },
+      save: function (id, doc) { var ref = id ? col.doc(id) : col.doc(); return ref.set(doc).then(function () { return ref.id; }); },
+      del: function (id) { return col.doc(id).delete(); } };
+  }
+  function within(pr, ms) { return Promise.race([pr, new Promise(function (_, rej) { setTimeout(function () { rej({ code: 'timeout' }); }, ms); })]); }
+  function busy(b) { $('psave').disabled = b || !store; $('pcopy').disabled = b || !store; }
+  function projState() { $('proj-state').textContent = state.pid ? (dirty ? 'Niezapisane zmiany' : 'Zapisany') : (dirty ? 'Jeszcze niezapisany' : ''); }
+  function renderProjHead() { $('pname').value = state.name || ''; $('pcopy').hidden = !state.pid; projState(); }
+  function renderProjects() {
+    $('plist-sum').textContent = 'Zapisane projekty (' + projects.length + ')';
+    if (listFailed) { $('plist').innerHTML = '<p class="note">Nie udało się wczytać zapisanych projektów. Sprawdź połączenie.</p><button class="btn ghost" type="button" data-act="refresh">Spróbuj ponownie</button>'; return; }
+    $('plist').innerHTML = projects.length ? projects.map(function (p) {
+      var when = p.updated ? new Date(p.updated).toLocaleString('pl-PL', { dateStyle: 'short', timeStyle: 'short' }) : '';
+      return '<div class="prow' + (p.id === state.pid ? ' cur' : '') + '" data-id="' + esc(p.id) + '"><div><b>' + esc(p.name || 'Bez nazwy') + '</b><small>' + when + (p.id === state.pid ? ' · otwarty' : '') + '</small></div>' +
+        '<div class="actions"><button class="btn ghost" type="button" data-act="open">Otwórz</button><button class="btn quiet" type="button" data-act="del">Usuń</button></div></div>';
+    }).join('') : '<p class="note">Nie masz jeszcze zapisanych projektów.</p>';
+  }
+  function refresh() {
+    if (!store) return Promise.resolve();
+    return within(store.list(), 10000).then(function (list) {
+      listFailed = false;
+      projects = list.filter(function (p) { return p.data && p.data.parts && p.data.stocks; }).sort(function (a, b) { return (b.updated || 0) - (a.updated || 0); });
+      renderProjects();
+    }, function () { listFailed = true; renderProjects(); });
+  }
+  function snapshot() { var d = JSON.parse(JSON.stringify(state)); d.example = false; delete d.pid; return d; }
+  function disarm() { if (armed) { armed.textContent = armed.dataset.t; armed = null; } }
+  function confirmStep(btn, text) {
+    if (armed === btn) { btn.textContent = btn.dataset.t; armed = null; return true; }
+    disarm(); armed = btn; btn.dataset.t = btn.textContent; btn.textContent = text;
+    setTimeout(function () { if (armed === btn) disarm(); }, 4000);
+    return false;
+  }
+  function saveProj(asCopy) {
+    var name = $('pname').value.trim();
+    if (!name) { pmsg('Wpisz nazwę projektu.'); $('pname').focus(); return; }
+    if (!store) return;
+    state.name = name; busy(true); pmsg('Zapisuję…');
+    store.save(asCopy ? null : (state.pid || null), { name: name, updated: Date.now(), data: snapshot() }).then(function (id) {
+      state.pid = id; dirty = false; save(); renderProjHead(); pmsg('Zapisano „' + name + '”.'); return refresh();
+    }, function (e) {
+      pmsg(e && e.code === 'quota_exceeded' ? 'Brak miejsca na kolejne projekty. Usuń któryś z zapisanych.' : 'Nie udało się zapisać projektu. Spróbuj ponownie.');
+    }).then(function () { busy(false); });
+  }
+  function openProj(id) {
+    var p = projects.filter(function (x) { return x.id === id; })[0]; if (!p) return;
+    state = JSON.parse(JSON.stringify(p.data)); state.pid = id; state.name = p.name || ''; state.example = false;
+    if (state.allow == null) state.allow = '50';
+    if (state.edgeT == null) state.edgeT = '1';
+    if (state.dimMode !== 'netto') state.dimMode = 'brutto';
+    open = {}; dirty = false; clearTimeout(timer);
+    renderSettings(); renderStocks(); renderParts(); renderProjHead(); renderProjects(); compute();
+    pmsg('Otwarto „' + (p.name || 'Bez nazwy') + '”.');
+  }
+  $('psave').addEventListener('click', function () { saveProj(false); });
+  $('pcopy').addEventListener('click', function () { saveProj(true); });
+  $('pnew').addEventListener('click', function (e) {
+    if (dirty && !confirmStep(e.currentTarget, 'Porzucić niezapisane zmiany?')) return;
+    disarm();
+    state = { example: false, name: '', kerf: state.kerf, trim: state.trim, allow: state.allow, edgeT: state.edgeT, dimMode: state.dimMode, grainAll: false,
+      stocks: JSON.parse(JSON.stringify(state.stocks)), parts: [{ n: '', l: '', w: '', q: '1', el: 0, es: 0 }] };
+    open = {}; dirty = false; clearTimeout(timer);
+    renderSettings(); renderStocks(); renderParts(); renderProjHead(); renderProjects(); compute();
+    pmsg('Nowy, pusty projekt. Płyty i ustawienia zostały bez zmian.'); $('pname').focus();
+  });
+  $('pname').addEventListener('input', function (e) { state.name = e.target.value; dirty = true; projState(); save(); });
+  $('plist').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-act]'); if (!b) return;
+    if (b.dataset.act === 'refresh') { $('plist').innerHTML = '<p class="note">Wczytuję zapisane projekty…</p>'; refresh(); return; }
+    var id = b.closest('.prow').dataset.id;
+    if (b.dataset.act === 'open') {
+      if (dirty && id !== state.pid && !confirmStep(b, 'Porzucić niezapisane zmiany?')) return;
+      if (dirty && id === state.pid && !confirmStep(b, 'Cofnąć do zapisanej wersji?')) return;
+      armed = null; openProj(id);
+    } else {
+      if (!confirmStep(b, 'Na pewno usunąć?')) return;
+      b.disabled = true;
+      store.del(id).then(function () {
+        if (state.pid === id) { delete state.pid; save(); renderProjHead(); }
+        pmsg('Usunięto projekt.'); return refresh();
+      }, function () { b.disabled = false; pmsg('Nie udało się usunąć projektu. Spróbuj ponownie.'); });
+    }
+  });
+  function setStore(st) {
+    store = st; busy(false);
+    $('proj-where').textContent = st.cloud ? 'Projekty zapisują się na Twoim koncie Claude i są dostępne także na innych urządzeniach.' : 'Projekty zapisują się tylko w tej przeglądarce na tym urządzeniu.';
+    refresh();
+  }
+  (function () {
+    var c = window.claude;
+    if (!c || typeof c.use !== 'function') { setStore(localStore()); return; }
+    Promise.all([c.use('db'), c.use('user')]).then(function (r) {
+      if (!r[0] || !r[1]) return null;
+      return r[1].id().then(function (uid) { return uid ? cloudStore(r[0], uid) : null; });
+    }).then(function (st) { setStore(st || localStore()); }, function () { setStore(localStore()); });
+  })();
+
+  renderSettings(); renderStocks(); renderParts(); renderProjHead(); compute();
+})();
+</script>
+<script>
+/* Powłoka aplikacji (jak w Półkowniku): tryb ciemny, styl „rysunek techniczny”, arkusz projektów, PDF z paska, skrót ustawień cięcia */
+(function () {
+  var $ = function (id) { return document.getElementById(id); }, root = document.documentElement, K = 'rozkroj-app-ui';
+  var ui = {}; try { ui = JSON.parse(localStorage.getItem(K)) || {}; } catch (e) {}
+  function saveUi() { try { localStorage.setItem(K, JSON.stringify(ui)); } catch (e) {} }
+  var mq = window.matchMedia ? matchMedia('(prefers-color-scheme: dark)') : null;
+  function applyUi() {
+    if (ui.theme) root.setAttribute('data-theme', ui.theme); else root.removeAttribute('data-theme');
+    if (ui.style === 'tech') root.setAttribute('data-style', 'tech'); else root.removeAttribute('data-style');
+    var dark = ui.theme ? ui.theme === 'dark' : !!(mq && mq.matches);
+    root.classList.toggle('is-dark', dark);
+    $('styleBtn').setAttribute('aria-pressed', ui.style === 'tech' ? 'true' : 'false');
+  }
+  applyUi(); if (mq && mq.addEventListener) mq.addEventListener('change', applyUi);
+  $('themeBtn').addEventListener('click', function () { ui.theme = root.classList.contains('is-dark') ? 'light' : 'dark'; saveUi(); applyUi(); });
+  $('styleBtn').addEventListener('click', function () { ui.style = ui.style === 'tech' ? '' : 'tech'; saveUi(); applyUi(); });
+  $('shareBtn').addEventListener('click', function () { $('pdf').click(); });
+  // arkusz projektów
+  var last = null;
+  function openSheet() { last = document.activeElement; $('projSheet').hidden = false; $('scrim').hidden = false; $('projBtn').setAttribute('aria-expanded', 'true'); $('pname').focus(); }
+  function closeSheet() { $('projSheet').hidden = true; $('scrim').hidden = true; $('projBtn').setAttribute('aria-expanded', 'false'); if (last && last.focus) last.focus(); }
+  $('projBtn').addEventListener('click', openSheet);
+  $('projClose').addEventListener('click', closeSheet);
+  $('scrim').addEventListener('click', closeSheet);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('projSheet').hidden) closeSheet(); });
+  // po otwarciu zapisanego projektu zamknij arkusz
+  $('plist').addEventListener('click', function (e) { var b = e.target.closest('button[data-act="open"]'); if (b) setTimeout(function () { if (/Otwarto/.test($('proj-msg').textContent)) closeSheet(); }, 50); });
+  // skrót ustawień cięcia w nagłówku podsekcji
+  function cutSum() { $('cutSum').textContent = 'rzaz ' + ($('kerf').value || 0) + ' · obrównanie ' + ($('trim').value || 0) + ' mm'; }
+  ['kerf', 'trim'].forEach(function (id) { $(id).addEventListener('input', cutSum); });
+  cutSum();
+  $('year').textContent = new Date().getFullYear();
+})();
+</script>
+</body>
+</html>
