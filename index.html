@@ -182,6 +182,18 @@ svg.plan{display:block;width:100%;height:auto;border-radius:12px;background:var(
 .chips i{display:inline-block;width:10px;height:10px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
 .chips i.band{width:16px;height:3px;border-radius:2px;background:var(--band);box-shadow:none}
 .chips i.remnant{width:14px;height:10px;border-radius:2px;background:none;box-shadow:none;outline:1.5px dashed var(--remnant);outline-offset:-1.5px}
+.cutlist .cl{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.cl th{font-size:.62rem;font-weight:700;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;text-align:left;padding:0 6px 6px}
+.cl td{padding:8px 6px;border-top:1px solid var(--line);vertical-align:middle}
+.cl td:first-child,.cl th:first-child{padding-left:0;width:10px}
+.cl-sw{display:block;width:6px;height:34px;border-radius:3px}
+.cl-nm b{display:block;font-weight:600;font-size:.9rem}
+.cl-nm small{display:block;font-size:.72rem;color:var(--muted);font-weight:600}
+.cl-b{font:600 1rem var(--f-disp);color:var(--muted);white-space:nowrap}
+.cl-n{font:700 1.25rem var(--f-disp);color:var(--hole);white-space:nowrap}
+.cl-q{font:700 1.1rem var(--f-disp);text-align:center}
+@media (max-width:420px){.cl th:nth-child(3),.cl td.cl-b{display:none}}
+html[data-style="tech"] .cl td{border-top-style:dashed}
 .chips i.grain{width:16px;height:10px;border-radius:2px;background:repeating-linear-gradient(180deg,var(--grain) 0 1px,transparent 1px 3px),var(--part-1)}
 
 /* projekty (w arkuszu) */
@@ -563,7 +575,29 @@ html[data-style="tech"] .colhead,html[data-style="tech"] .prt-head,html[data-sty
         '. Sprawdź wymiary i liczbę płyt, obrównanie oraz czy nie blokuje jej kierunek słojów.</div>';
     } else if (!n) w = '<p class="note">Dodaj formatkę z długością, szerokością i liczbą sztuk.</p>';
     $('warn').innerHTML = w;
-    $('sheets').innerHTML = res.sheets.map(function (sh, si) { return sheetHtml(sh, si, map); }).join('');
+    $('sheets').innerHTML = res.sheets.map(function (sh, si) { return sheetHtml(sh, si, map); }).join('') + (n ? cutListHtml() : '');
+  }
+  /* Lista formatek do cięcia pod schematami — tylko przy „Odejmij okleinę”: wymiar gotowy (brutto) i do cięcia (netto). */
+  function cutListHtml() {
+    if (state.dimMode !== 'netto') return '';
+    var rows = [];
+    state.parts.forEach(function (p, i) {
+      var q = Math.floor(num(p.q));
+      if (!(num(p.l) > 0 && num(p.w) > 0 && q > 0)) return;
+      var nd = nettoDims(p), el = +p.el || 0, es = +p.es || 0;
+      var okl = el || es ? 'okl. ' + [el ? el + ' dł.' : '', es ? es + ' szer.' : ''].filter(Boolean).join(' + ') : 'bez okleiny';
+      rows.push('<tr><td><span class="cl-sw" style="background:' + COLORS[i % COLORS.length] + '"></span></td>' +
+        '<td class="cl-nm"><b>' + esc(p.n || 'Formatka ' + (i + 1)) + '</b><small>' + okl + (p.m ? ' · ' + esc(CORE.keyOf(p.m)) : '') + '</small></td>' +
+        '<td class="cl-b">' + mm(num(p.l)) + '×' + mm(num(p.w)) + '</td>' +
+        '<td class="cl-n">' + mm(nd.l) + '×' + mm(nd.w) + '</td>' +
+        '<td class="cl-q">' + q + '</td></tr>');
+    });
+    if (!rows.length) return '';
+    return '<section class="card cutlist" aria-labelledby="h-cut"><div class="sec-h">' +
+      '<span class="sec-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="4" cy="6" r="1.2" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="4" cy="18" r="1.2" fill="currentColor" stroke="none"/></svg></span>' +
+      '<h2 class="sec-t" id="h-cut">Formatki do cięcia (netto)</h2></div>' +
+      '<p class="note">Okleina ' + mm(edgeT()) + ' mm odjęta od wymiarów: każda oklejona krawędź zmniejsza wymiar w poprzek.</p>' +
+      '<table class="cl"><thead><tr><th></th><th>Formatka</th><th>Gotowa (brutto)</th><th>Do cięcia (netto)</th><th>Szt.</th></tr></thead><tbody>' + rows.join('') + '</tbody></table></section>';
   }
   /* Okleina na rysunku: pasek wzdłuż oklejonej krawędzi formatki (w jednostkach płyty, mm), kolor: token band. */
   /* Całe kawałki odpadu warte zachowania: do 2 największych na płycie, krótszy bok ≥ 200 mm. */
