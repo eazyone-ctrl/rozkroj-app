@@ -16,3 +16,7 @@ Otwórz `index.html` w przeglądarce (albo `python3 -m http.server` w tym folder
 ## Dane
 
 Projekty i ustawienia zapisują się w przeglądarce pod własnymi kluczami (`rozkroj-app-v1`, `rozkroj-app-projekty-v1`, `rozkroj-app-ui`), osobno od `rozkroj-plyt`. W artefakcie Claude projekty zapisują się na koncie.
+
+## Artefakt
+
+https://claude.ai/artifact/6548qj741pCsmWBs8xFdNU — publikowany z `index.html` + `optimizer.js`, uprawnienia: db, downloads, user.
