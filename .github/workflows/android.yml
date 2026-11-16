@@ -1,0 +1,51 @@
+name: Android APK
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    env:
+      VERSION_CODE: ${{ github.run_number }}
+      VERSION_NAME: ${{ github.ref_type == 'tag' && github.ref_name || format('1.0-dev.{0}', github.run_number) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Strona do assets (z wbudowanym jsPDF)
+        run: bash android/prepare-assets.sh
+
+      - name: Budowa APK
+        working-directory: android
+        run: gradle --no-daemon assembleDebug
+
+      - name: Nazwa pliku
+        run: mv android/app/build/outputs/apk/debug/app-debug.apk "rozkroj-${VERSION_NAME}.apk"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rozkroj-${{ env.VERSION_NAME }}
+          path: rozkroj-*.apk
+
+      - name: Wydanie (tylko dla tagów v*)
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: rozkroj-*.apk
+          generate_release_notes: true

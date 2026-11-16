@@ -1,0 +1,31 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'pl.rozkroj.app'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'pl.rozkroj.app'
+        minSdk 26
+        targetSdk 34
+        // numer i nazwę wersji podaje GitHub Actions (VERSION_CODE, VERSION_NAME)
+        versionCode((System.getenv('VERSION_CODE') ?: '1') as Integer)
+        versionName(System.getenv('VERSION_NAME') ?: '1.0')
+    }
+
+    buildTypes {
+        release { minifyEnabled false }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'androidx.webkit:webkit:1.8.0'
+    implementation 'androidx.core:core:1.12.0'
+}

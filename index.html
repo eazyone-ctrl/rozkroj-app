@@ -873,6 +873,14 @@ html[data-style="tech"] .colhead,html[data-style="tech"] .prt-head,html[data-sty
       try {
         var type = /\.pdf$/i.test(f.filename) ? 'application/pdf' : /\.csv$/i.test(f.filename) ? 'text/csv;charset=utf-8' : 'application/octet-stream';
         var blob = new Blob([f.data], { type: type });
+        // Aplikacja na Androida: plik idzie do natywnego mostka (zapis + systemowe „Udostępnij”)
+        if (window.AndroidBridge && typeof window.AndroidBridge.saveFile === 'function') {
+          var fr = new FileReader();
+          fr.onload = function () { try { window.AndroidBridge.saveFile(f.filename, type.split(';')[0], String(fr.result).split(',')[1]); res(); } catch (e) { rej(e); } };
+          fr.onerror = function () { rej(fr.error); };
+          fr.readAsDataURL(blob);
+          return;
+        }
         var url = URL.createObjectURL(blob), a = document.createElement('a');
         a.href = url; a.download = f.filename; a.style.display = 'none';
         document.body.appendChild(a); a.click(); a.remove();
